@@ -1,4 +1,4 @@
-# 🧠 CrewAI Resume Parser - ATS Optimization System
+# 🧠 ResumeAI - ATS Optimization System powered by CrewAI
 
 A complete multi-agent AI system that transforms resumes into ATS-optimized versions using CrewAI framework and Euri AI models.
 
