@@ -8,7 +8,7 @@ import os
 
 API_KEY = os.getenv("EURO_API_KEY")
 ENDPOINT = os.getenv("EURO_API_ENDPOINT")
-MODEL = "gpt-4.1-mini"
+MODEL = "gpt-4.1-nano"
 
 class CustomLLM(BaseLLM):
     def __init__(self, model: str, euron_api_key: str, temperature: Optional[float] = None):
