@@ -11,17 +11,15 @@ pip install -r requirements.txt
 
 ### 2. Setup Euri API Key
 ```bash
-# Copy environment template
-cp .env.example .env
-
 # Edit .env and add your Euri API key
 EURI_API_KEY=euri-your-actual-api-key-here
+EURI_API_ENDPOINT=euri-endpoint-here
 EURI_MODEL=gpt-4.1-nano
 ```
 
 ### 3. Run Application
 ```bash
-streamlit run streamlit_app.py
+streamlit run app.py
 ```
 
 Open browser to: **http://localhost:8501**
@@ -31,19 +29,16 @@ Open browser to: **http://localhost:8501**
 ## 📁 Project Structure
 
 ```
-crewai_resume_parser/
-├── streamlit_app.py         # Main Streamlit web application
+ResumeAI/
+├── app.py         # Main Streamlit web application
 ├── requirements.txt         # Python dependencies
-├── .env.example            # Environment variables template
-├── sample_resume.txt       # Sample resume for testing
-├── sample_job_description.txt # Sample job posting
 └── crew_app/               # Core CrewAI application
     ├── __init__.py
     ├── agents.py           # 4 AI agent definitions
     ├── tasks.py            # Task definitions for each agent
     ├── crew.py             # Pipeline orchestration
     ├── utils.py            # Utility functions (DOCX conversion)
-    └── tools/              # File processing tools
+    └── file_tools/              # File processing tools
         ├── __init__.py
         └── file_loader.py  # PDF/DOCX text extraction
 ```
@@ -254,7 +249,7 @@ ModuleNotFoundError: No module named 'crewai'
 ```
 Could not extract text from file
 ```
-**Solution:** Ensure file is valid PDF/DOCX, try with `sample_resume.txt`
+**Solution:** Ensure file is valid PDF/DOCX
 
 ---
 
