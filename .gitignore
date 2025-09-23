@@ -2,4 +2,5 @@
 .DS_Store
 crew_app/__pycache__
 crew_app/file_tools/__pycache__
-agent
+agent # virtual environment
+resumeai # virtual environment
