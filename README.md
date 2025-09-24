@@ -57,6 +57,7 @@ cd ResumeAI
 4. Add your OpenAI or EuriAI API key to `.env` file:
    ```
    EURI_API_KEY=your_openai_api_key_here
+   EURI_API_ENDPOINT=euri-endpoint-here
    ```
 
 5. Run the backend server:
