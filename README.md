@@ -348,12 +348,6 @@ Could not extract text from file
 
 ---
 
-## 📄 License
-
-This project is provided for educational and demonstration purposes.
-
----
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -362,8 +356,3 @@ This project is provided for educational and demonstration purposes.
 4. Push to branch: `git push origin feature-name`
 5. Submit pull request
 
----
-
-**🎯 Transform your resume with AI-powered optimization!**
-
-**Ready to get started? Run `streamlit run streamlit_app.py` and open http://localhost:8501**
