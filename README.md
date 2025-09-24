@@ -222,6 +222,13 @@ def detect_and_extract(filename: str, file_bytes: bytes):
 
 ---
 
+## UI
+
+![Dashboard](assets/output-1.png)
+![Resume-upload](assets/output-2.png)
+![Footer](assets/output-3.png)
+
+
 ## 📊 Example Output
 
 ### Input Resume (Basic)
