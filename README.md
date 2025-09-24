@@ -222,12 +222,13 @@ def detect_and_extract(filename: str, file_bytes: bytes):
 
 ---
 
-## UI
+## User Interface
 
-![Dashboard](assets/output-1.png)
-![Resume-upload](assets/output-2.png)
-![Footer](assets/output-3.png)
+<img src="assets/output-1.png" alt="Dashboard" width="300"/>
 
+<img src="assets/output-2.png" alt="Resume-upload" width="300"/>
+
+<img src="assets/output-3.png" alt="Footer" width="300"/>
 
 ## 📊 Example Output
 
