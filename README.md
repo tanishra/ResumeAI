@@ -25,23 +25,65 @@ streamlit run app.py
 Open browser to: **http://localhost:8501**
 
 ---
+## 🚀 How to Run the Application
 
-## 📁 Project Structure
+### 1. Clone the Repository
+```bash
+git clone https://github.com/tanishra/ResumeAI.git
+cd ResumeAI
+```
 
-```
-ResumeAI/
-├── app.py         # Main Streamlit web application
-├── requirements.txt         # Python dependencies
-└── crew_app/               # Core CrewAI application
-    ├── __init__.py
-    ├── agents.py           # 4 AI agent definitions
-    ├── tasks.py            # Task definitions for each agent
-    ├── crew.py             # Pipeline orchestration
-    ├── utils.py            # Utility functions (DOCX conversion)
-    └── file_tools/              # File processing tools
-        ├── __init__.py
-        └── file_loader.py  # PDF/DOCX text extraction
-```
+---
+
+### 2. Backend Setup (Streamlit + CrewAI)
+
+1. Navigate to the backend folder:
+   ```bash
+   cd backend
+   ```
+
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv resumeai
+   source resumeai/bin/activate   # On macOS/Linux
+   resumeai\Scripts\activate    # On Windows
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Add your OpenAI or EuriAI API key to `.env` file:
+   ```
+   EURI_API_KEY=your_openai_api_key_here
+   ```
+
+5. Run the backend server:
+   ```bash
+   uvicorn backend.app.main:app --reload
+   ```
+
+---
+
+### 3. Frontend Setup (Next.js + TypeScript)
+
+1. Navigate to the frontend folder:
+   ```bash
+   cd frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+By default, the frontend runs at: **http://localhost:3000**
 
 ---
 
