@@ -224,11 +224,11 @@ def detect_and_extract(filename: str, file_bytes: bytes):
 
 ## User Interface
 
-<img src="assets/output-1.png" alt="Dashboard" width="300"/>
+<img src="./assets/output-1.png" alt="Dashboard" style="width:100%;/>
 
-<img src="assets/output-2.png" alt="Resume-upload" width="300"/>
+<img src="./assets/output-2.png" alt="Resume-upload" style="width:100%;/>
 
-<img src="assets/output-3.png" alt="Footer" width="300"/>
+<img src="./assets/output-3.png" alt="Footer" style="width:100%;/>
 
 ## 📊 Example Output
 
