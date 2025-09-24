@@ -8,3 +8,4 @@ resumeai # virtual environment
 /backend/app/routers/__pycache__
 /backend/app/services/__pycache__
 /__pycache__
+/node_modules
