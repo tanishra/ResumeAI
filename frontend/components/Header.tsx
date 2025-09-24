@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { FeaturesSection } from './Features';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -31,9 +32,7 @@ export default function Header() {
   }, []);
 
   const navItems = [
-    { label: 'Features', href: '#features', icon: Star },
-    { label: 'How it Works', href: '#how-it-works', icon: HelpCircle },
-    { label: 'API Docs', href: '#docs', icon: ExternalLink },
+    { label: 'API Docs', href: 'https://euron.one/euri', icon: ExternalLink },
   ];
 
   return (
@@ -80,6 +79,7 @@ export default function Header() {
           </motion.div>
 
           {/* Desktop Navigation */}
+          <div className='ml-43'>
           <nav className="hidden md:flex items-center space-x-6">
             {navItems.map((item, index) => (
               <motion.a
@@ -97,6 +97,7 @@ export default function Header() {
               </motion.a>
             ))}
           </nav>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
@@ -137,7 +138,7 @@ export default function Header() {
                 variant="outline" 
                 size="sm"
                 className="hidden sm:flex items-center space-x-2 bg-gray-900 text-white transition-transform duration-200 transform hover:scale-105"
-                onClick={() => window.open('https://github.com', '_blank')}
+                onClick={() => window.open('https://github.com/tanishra/ResumeAI', '_blank')}
               >
                 <Github className="h-4 w-4" />
                 <span>GitHub</span>
