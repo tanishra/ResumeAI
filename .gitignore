@@ -4,3 +4,7 @@ crew_app/__pycache__
 crew_app/file_tools/__pycache__
 agent # virtual environment
 resumeai # virtual environment
+/backend/app/__pycache__
+/backend/app/routers/__pycache__
+/backend/app/services/__pycache__
+/__pycache__
