@@ -170,6 +170,7 @@ pylance==0.36.0
 pypdf==6.0.0
 pypdfium2==4.30.0
 PyPika==0.48.9
+python-multipart
 pyproject_hooks==1.2.0
 python-bidi==0.6.6
 python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_python-dateutil_1751104122/work
