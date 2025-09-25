@@ -163,10 +163,8 @@ export default function HomePage() {
               </motion.div>
             </div>
           </motion.div>
-        </motion.div>
-      </main>
 
-     {/* Footer */}
+             {/* Footer */}
       <footer className="bg-slate-100/80 backdrop-blur-sm border-t border-gray-200">
         <div className="container mx-auto px-4 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
@@ -221,6 +219,8 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+        </motion.div>
+      </main>
 
 
       {/* Background Decoration */}
