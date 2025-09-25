@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, Variants} from 'framer-motion';
 import { Brain, Sparkles, Target, Zap, Github, Linkedin, Twitter } from 'lucide-react';
 import Header from '@/components/Header';
 import ResumeAnalyzer from '@/components/ResumeAnalyzer';
@@ -24,7 +24,7 @@ export default function HomePage() {
     },
   };
 
-  const itemVariants = {
+  const itemVariants : Variants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
