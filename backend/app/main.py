@@ -5,7 +5,7 @@ from backend.app.routers import resume
 app = FastAPI(title="Resume Analyzer API", version="1.0.0")
 
 # Allow only localhost (since no production domain yet)
-origins = ["http://localhost:3000"]
+origins = ["http://localhost:3000","https://resume-ai-five-snowy.vercel.app"]
 
 app.add_middleware(
     CORSMiddleware,
