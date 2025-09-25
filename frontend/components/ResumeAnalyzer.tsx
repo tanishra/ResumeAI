@@ -74,6 +74,8 @@ export default function ResumeAnalyzer({
     }
   };
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+
   // const handleAnalyze = async () => {
   //   if (!uploadedFile || !jobTitle.trim() || !jobDescription.trim()) {
   //     setError('Please upload a resume and provide job details');
@@ -176,7 +178,7 @@ export default function ResumeAnalyzer({
 
       // Make the API call to your FastAPI backend
       const response = await axios.post(
-        'http://localhost:8000/resume/analyze', 
+        `${API_BASE_URL}/resume/analyze`,
         formData, 
         {
           headers: {
