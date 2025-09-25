@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Sparkles, Target, Zap } from 'lucide-react';
+import { Brain, Sparkles, Target, Zap, Github, Linkedin, Twitter } from 'lucide-react';
 import Header from '@/components/Header';
 import ResumeAnalyzer from '@/components/ResumeAnalyzer';
 import ResultsTabs from '@/components/ResultsTabs';
@@ -165,6 +165,63 @@ export default function HomePage() {
           </motion.div>
         </motion.div>
       </main>
+
+     {/* Footer */}
+      <footer className="bg-slate-100/80 backdrop-blur-sm border-t border-gray-200">
+        <div className="container mx-auto px-4 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            {/* Brand Section */}
+            <div className="md:col-span-2">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Resume Agent</h3>
+              <p className="text-gray-600 max-w-sm">
+                Advanced resume optimization powered by AI. We help you create ATS-friendly resumes with actionable insights to land your dream job.
+              </p>
+            </div>
+
+            {/* Links Section */}
+            <div>
+              <h4 className="font-semibold text-gray-800 mb-4">Product</h4>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-gray-600 hover:text-indigo-600 transition-colors">Features</a></li>
+                <li><a href="#" className="text-gray-600 hover:text-indigo-600 transition-colors">How It Works</a></li>
+                <li><a href="#" className="text-gray-600 hover:text-indigo-600 transition-colors">Pricing</a></li>
+              </ul>
+            </div>
+
+            {/* Resources Section */}
+            <div>
+              <h4 className="font-semibold text-gray-800 mb-4">Resources</h4>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-gray-600 hover:text-indigo-600 transition-colors">Blog</a></li>
+                <li><a href="#" className="text-gray-600 hover:text-indigo-600 transition-colors">FAQ</a></li>
+                <li><a href="#" className="text-gray-600 hover:text-indigo-600 transition-colors">Contact Us</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-300 pt-8 text-center">
+            <div className="flex flex-col sm:flex-row justify-between items-center text-sm text-gray-600 mb-6">
+              <p className="order-2 sm:order-1 mt-4 sm:mt-0">© {new Date().getFullYear()} Resume Agent. All rights reserved.</p>
+              <div className="flex space-x-4 order-1 sm:order-2">
+                <a href="https://x.com/RajputTani53991" className="hover:text-indigo-600 transition-colors"><Twitter className="h-5 w-5" /></a>
+                <a href="https://github.com/tanishra" className="hover:text-indigo-600 transition-colors"><Github className="h-5 w-5" /></a>
+                <a href="https://www.linkedin.com/in/tr26/" className="hover:text-indigo-600 transition-colors"><Linkedin className="h-5 w-5" /></a>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500">
+              Resume intelligence powered by <a 
+                href="https://euron.one/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="font-semibold text-indigo-600 hover:underline"
+              >
+                Euron
+              </a>.
+            </p>
+          </div>
+        </div>
+      </footer>
+
 
       {/* Background Decoration */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
