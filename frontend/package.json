@@ -20,7 +20,7 @@
     "docx": "^9.5.1",
     "file-save": "^0.2.0",
     "file-saver": "^2.0.5",
-    "framer-motion": "^10.18.0",
+    "framer-motion": "^12.23.22",
     "lucide-react": "^0.263.1",
     "mammoth": "^1.11.0",
     "next": "^15.5.3",
