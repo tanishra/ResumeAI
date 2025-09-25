@@ -76,68 +76,6 @@ export default function ResumeAnalyzer({
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-  // const handleAnalyze = async () => {
-  //   if (!uploadedFile || !jobTitle.trim() || !jobDescription.trim()) {
-  //     setError('Please upload a resume and provide job details');
-  //     return;
-  //   }
-
-  //   if (!extractedText.trim()) {
-  //     setError('No text could be extracted from the uploaded file');
-  //     return;
-  //   }
-
-  //   setError(null);
-  //   setIsAnalyzing(true);
-  //   setProgress(0);
-  //   setCurrentStep(getCurrentStep(0));
-
-  //   // Progress simulation
-  //   const progressInterval = setInterval(() => {
-  //     setProgress(prev => {
-  //       const newProgress = Math.min(prev + Math.random() * 12, 95);
-  //       setCurrentStep(getCurrentStep(newProgress));
-        
-  //       if (newProgress >= 95) {
-  //         clearInterval(progressInterval);
-  //       }
-        
-  //       return newProgress;
-  //     });
-  //   }, 800);
-
-  //   try {
-  //     const analysisRequest: AnalysisRequest = {
-  //       resumeText: extractedText,
-  //       jobTitle: jobTitle.trim(),
-  //       jobDescription: jobDescription.trim(),
-  //       fileName: uploadedFile.name
-  //     };
-
-  //     const response = await CrewAPI.analyzeResume(analysisRequest);
-      
-  //     clearInterval(progressInterval);
-  //     setProgress(100);
-  //     setCurrentStep(getCurrentStep(100));
-
-  //     if (response.success && response.data) {
-  //       setTimeout(() => {
-  //         onAnalysisComplete(response.data);
-  //         setIsAnalyzing(false);
-  //       }, 1000);
-  //     } else {
-  //       throw new Error(response.error || 'Analysis failed');
-  //     }
-      
-  //   } catch (error) {
-  //     console.error('Analysis failed:', error);
-  //     clearInterval(progressInterval);
-  //     setIsAnalyzing(false);
-  //     setProgress(0);
-  //     setError(error instanceof Error ? error.message : 'Analysis failed. Please try again.');
-  //   }
-  // };
-
   const handleAnalyze = async () => {
     if (!uploadedFile || !jobTitle.trim() || !jobDescription.trim()) {
       setError('Please upload a resume and provide job details');
