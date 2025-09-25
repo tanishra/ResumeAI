@@ -127,26 +127,71 @@ export class CrewAPI {
   /**
    * Health check for the API
    */
+  // static async healthCheck(): Promise<{ healthy: boolean; message?: string }> {
+  //   try {
+  //     const response = await fetch(`${this.API_BASE_URL}/health`, {
+  //       method: 'GET',
+  //       timeout: 5000,
+  //     });
+
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       return { healthy: true, message: data.message };
+  //     } else {
+  //       return { healthy: false, message: `HTTP ${response.status}` };
+  //     }
+  //   } catch (error) {
+  //     return { 
+  //       healthy: false, 
+  //       message: error instanceof Error ? error.message : 'Unknown error' 
+  //     };
+  //   }
+  // }
   static async healthCheck(): Promise<{ healthy: boolean; message?: string }> {
+    // 1. Create an AbortController to manage the request signal.
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    // 2. Create a timer that will abort the request after 5 seconds.
+    const timeoutId = setTimeout(() => {
+      console.log('Request timed out');
+      controller.abort();
+    }, 5000); // 5000 milliseconds = 5 seconds
+
     try {
       const response = await fetch(`${this.API_BASE_URL}/health`, {
         method: 'GET',
-        timeout: 5000,
+        // 3. Pass the signal to the fetch request.
+        signal: signal,
       });
 
       if (response.ok) {
         const data = await response.json();
         return { healthy: true, message: data.message };
       } else {
-        return { healthy: false, message: `HTTP ${response.status}` };
+        return { healthy: false, message: `Server responded with HTTP ${response.status}` };
       }
     } catch (error) {
+      // The catch block will now also handle the AbortError when the timeout occurs.
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'The request timed out after 5 seconds.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
       return { 
         healthy: false, 
-        message: error instanceof Error ? error.message : 'Unknown error' 
+        message: errorMessage
       };
+    } finally {
+      // 4. IMPORTANT: Clear the timeout to prevent memory leaks.
+      // This runs whether the fetch succeeds, fails, or times out.
+      clearTimeout(timeoutId);
     }
   }
+
 
   /**
    * Get supported file types and limits
