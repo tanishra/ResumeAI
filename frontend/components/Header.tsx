@@ -172,7 +172,7 @@ export default function Header() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.6 }}
               >
-                <SignInButton mode="modal" afterSignInUrl="/dashboard" afterSignUpUrl="/dashboard">
+                <SignInButton mode="modal">
                   {/* This div wrapper prevents the warning */}
                   <div>
                     <Button
