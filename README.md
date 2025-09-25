@@ -3,9 +3,7 @@
 A complete multi-agent AI system that transforms resumes into ATS-optimized versions using CrewAI framework and Euri AI models.
 
 ## 🚀 Live Demo
-You can access the live, deployed version of ResumeAI here:
-
-[Link](https://resume-ai-five-snowy.vercel.app)  
+You can access the live, deployed version of ResumeAI here: [Link](https://resume-ai-five-snowy.vercel.app)  
 
 ## 🚀 Quick Start
 
