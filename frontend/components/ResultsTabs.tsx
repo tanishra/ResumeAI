@@ -675,7 +675,7 @@ export default function ResultsTabs({ results }: ResultsTabsProps) {
   };
 
   return (
-    <Tabs defaultValue="optimized" className="w-full">
+    <Tabs defaultValue="evaluation" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="evaluation">ATS Evaluation</TabsTrigger>
         <TabsTrigger value="optimized">Optimized Resume</TabsTrigger>
