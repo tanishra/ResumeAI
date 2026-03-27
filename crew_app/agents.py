@@ -1,64 +1,117 @@
-from crewai import Agent, LLM
-from typing import Optional, Union, List, Dict, Any
-import requests
 import os
-from dotenv import load_dotenv
+from typing import Any, Dict, List, Optional, Union
 
-# Load environment variables
+from crewai import Agent, BaseLLM
+from dotenv import load_dotenv
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
+
 load_dotenv()
 
-API_KEY = os.getenv("EURI_API_KEY")
-BASE_URL = os.getenv("EURI_API_BASE_URL", "https://api.euron.one/api/v1/euri")
-MODEL = os.getenv("EURI_MODEL", "gpt-4.1-nano")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
-if not API_KEY:
-    raise ValueError("EURI_API_KEY environment variable is required")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY environment variable is required")
 
-print(f"✓ Configuring Euri AI with base URL: {BASE_URL}")
 
-# Test the endpoint connectivity first
-try:
-    import requests
-    test_url = f"{BASE_URL}/chat/completions"
-    test_response = requests.get(BASE_URL.replace('/api/v1/euri', ''), timeout=5)
-    print(f"✓ Euri API domain is reachable (status: {test_response.status_code})")
-except Exception as e:
-    print(f"⚠ Endpoint test warning: {e}")
+class LangChainOpenAILLM(BaseLLM):
+    def __init__(self, model: str, api_key: str, temperature: Optional[float] = None):
+        super().__init__(model=model, temperature=temperature)
+        self.client = ChatOpenAI(
+            api_key=api_key,
+            model=model,
+            temperature=temperature if temperature is not None else 0.0,
+            timeout=120,
+            max_retries=2,
+        )
 
-# Create LLM instances with the correct Euri AI configuration
-parser_llm = LLM(
-    model=MODEL,
-    api_key=API_KEY,
-    base_url=BASE_URL,
-    temperature=0.0
-)
+    def call(
+        self,
+        messages: Union[str, List[Dict[str, Any]]],
+        tools: Optional[List[dict]] = None,
+        callbacks: Optional[List[Any]] = None,
+        available_functions: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        normalized_messages = self._normalize_messages(messages)
+        response = self.client.invoke(normalized_messages)
+        content = self._extract_content(response.content)
+        return self._apply_stop_words(content)
 
-writer_llm = LLM(
-    model=MODEL,
-    api_key=API_KEY,
-    base_url=BASE_URL,
-    temperature=0.3
-)
+    def supports_function_calling(self) -> bool:
+        return False
 
-evaluator_llm = LLM(
-    model=MODEL,
-    api_key=API_KEY,
-    base_url=BASE_URL,
-    temperature=0.0
-)
+    def supports_stop_words(self) -> bool:
+        return False
 
-refiner_llm = LLM(
-    model=MODEL,
-    api_key=API_KEY,
-    base_url=BASE_URL,
-    temperature=0.2
-)
+    def get_context_window_size(self) -> int:
+        return 128000
 
-print("✓ All LLM instances configured with Euri AI")
+    def _normalize_messages(
+        self, messages: Union[str, List[Dict[str, Any]]]
+    ) -> List[Union[SystemMessage, HumanMessage, AIMessage]]:
+        if isinstance(messages, str):
+            return [HumanMessage(content=messages)]
+
+        normalized: List[Union[SystemMessage, HumanMessage, AIMessage]] = []
+        for message in messages:
+            role = message.get("role", "user")
+            content = self._extract_content(message.get("content", ""))
+
+            if role == "system":
+                normalized.append(SystemMessage(content=content))
+            elif role == "assistant":
+                normalized.append(AIMessage(content=content))
+            else:
+                normalized.append(HumanMessage(content=content))
+
+        return normalized
+
+    def _extract_content(self, content: Any) -> str:
+        if isinstance(content, str):
+            return content
+
+        if isinstance(content, list):
+            parts: List[str] = []
+            for item in content:
+                if isinstance(item, str):
+                    parts.append(item)
+                elif isinstance(item, dict):
+                    text = item.get("text")
+                    if text:
+                        parts.append(str(text))
+            return "\n".join(parts).strip()
+
+        if content is None:
+            return ""
+
+        return str(content)
+
+    def _apply_stop_words(self, content: str) -> str:
+        stop_words = getattr(self, "stop", None) or []
+        for stop_word in stop_words:
+            if stop_word in content:
+                return content.split(stop_word)[0]
+        return content
+
+
+def _build_llm(temperature: float) -> LangChainOpenAILLM:
+    return LangChainOpenAILLM(
+        model=OPENAI_MODEL,
+        api_key=OPENAI_API_KEY,
+        temperature=temperature,
+    )
+
+
+parser_llm = _build_llm(0.0)
+writer_llm = _build_llm(0.3)
+evaluator_llm = _build_llm(0.0)
+refiner_llm = _build_llm(0.2)
+
 
 def build_parser_agent():
     return Agent(
-        role="Resume Parsing Specialist", 
+        role="Resume Parsing Specialist",
         goal="Extract clean, structured text from a resume suitable for ATS optimization.",
         backstory=(
             "You efficiently clean resume text by removing artifacts and normalizing formatting. "
@@ -81,7 +134,7 @@ def build_ats_writer_agent():
         ),
         llm=writer_llm,
         max_iter=1,
-        max_execution_time=120
+        max_execution_time=120,
     )
 
 
@@ -95,15 +148,19 @@ def build_evaluator_agent():
         ),
         llm=evaluator_llm,
         max_iter=1,
-        max_execution_time=120
+        max_execution_time=120,
     )
+
 
 def build_refiner_agent():
     return Agent(
         role="Bullet Point Refiner",
         goal="Transform bullet points into high-impact, ATS-optimized statements with strong metrics.",
-        backstory="You excel at creating powerful bullet points that combine action verbs, specific achievements, and quantified results. You work efficiently to maximize impact.",
+        backstory=(
+            "You excel at creating powerful bullet points that combine action verbs, specific "
+            "achievements, and quantified results. You work efficiently to maximize impact."
+        ),
         llm=refiner_llm,
         max_iter=1,
-        max_execution_time=120
+        max_execution_time=120,
     )
