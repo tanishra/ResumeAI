@@ -28,7 +28,8 @@ def build_crew(raw_resume_text: str, job_title: str, job_description: str):
         agents=[parser, writer, refiner, evaluator],
         tasks=[t_parse, t_rewrite, t_refine, t_eval],
         process=Process.sequential,
-        verbose=True
+        verbose=True,
+        tracing=False
     )
     return crew
 
@@ -47,7 +48,8 @@ def run_pipeline(raw_resume_text: str, job_title: str, job_description: str):
         agents=[parser],
         tasks=[t_parse],
         process=Process.sequential,
-        verbose=True
+        verbose=True,
+        tracing=False
     )
     
     # Execute parsing
@@ -60,7 +62,8 @@ def run_pipeline(raw_resume_text: str, job_title: str, job_description: str):
         agents=[writer],
         tasks=[t_rewrite],
         process=Process.sequential,
-        verbose=True
+        verbose=True,
+        tracing=False
     )
     
     # Execute rewriting
@@ -73,7 +76,8 @@ def run_pipeline(raw_resume_text: str, job_title: str, job_description: str):
         agents=[refiner],
         tasks=[t_refine],
         process=Process.sequential,
-        verbose=True
+        verbose=True,
+        tracing=False
     )
     
     # Execute refining
@@ -86,7 +90,8 @@ def run_pipeline(raw_resume_text: str, job_title: str, job_description: str):
         agents=[evaluator],
         tasks=[t_eval],
         process=Process.sequential,
-        verbose=True
+        verbose=True,
+        tracing=False
     )
     
     # Execute evaluation
