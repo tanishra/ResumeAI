@@ -61,6 +61,8 @@ jsonschema==4.25.1
 jsonschema-specifications==2025.9.1
 kubernetes==33.1.0
 litellm==1.74.9
+langchain==0.3.27
+langchain-openai==0.3.33
 lxml==6.0.2
 markdown-it-py==4.0.0
 MarkupSafe==3.0.2
