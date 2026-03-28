@@ -42,7 +42,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^8.0.0",
-    "eslint-config-next": "^14.0.0",
+    "eslint-config-next": "^15.5.4",
     "tailwindcss-animate": "^1.0.7",
     "tw-animate-css": "^1.3.8",
     "typescript": "5.9.3"
