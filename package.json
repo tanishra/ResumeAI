@@ -1,0 +1,14 @@
+{
+  "name": "resumeai",
+  "private": true,
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "build": "npm --prefix frontend run build",
+    "dev": "npm --prefix frontend run dev",
+    "lint": "npm --prefix frontend run lint",
+    "postinstall": "npm --prefix frontend ci",
+    "start": "npm --prefix frontend run start"
+  }
+}
