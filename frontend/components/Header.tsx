@@ -28,7 +28,7 @@ export default function Header() {
   }, []);
 
   const navItems = [
-    { label: 'API Docs', href: 'https://euron.one/euri', icon: ExternalLink },
+    { label: 'API Docs', href: 'https://developers.openai.com/api/reference/overview', icon: ExternalLink },
   ];
 
   return (
