@@ -1,5 +1,9 @@
+crewai
 fastapi
-uvicorn[standard]
-python-multipart
-pydantic
 langchain-openai
+openai
+pypdf
+python-docx
+python-dotenv
+python-multipart
+uvicorn[standard]
