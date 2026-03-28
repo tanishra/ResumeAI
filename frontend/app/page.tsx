@@ -8,9 +8,10 @@ import ResumeAnalyzer from '@/components/ResumeAnalyzer';
 import ResultsTabs from '@/components/ResultsTabs';
 import AISettings from '@/components/AISettings';
 import { Card } from '@/components/ui/card';
+import { type AnalysisResults } from '@/lib/crew_api';
 
 export default function HomePage() {
-  const [analysisResults, setAnalysisResults] = useState(null);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const containerVariants = {
@@ -121,7 +122,11 @@ export default function HomePage() {
             </motion.div>
 
             {/* Main Content */}
-            <motion.div variants={itemVariants} className="lg:col-span-3 space-y-8">
+            <motion.div
+              variants={itemVariants}
+              className="lg:col-span-3 space-y-8"
+              id="resume-analyzer"
+            >
               {/* Resume Analyzer */}
               <ResumeAnalyzer 
                 onAnalysisComplete={setAnalysisResults}
