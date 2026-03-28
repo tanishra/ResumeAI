@@ -24,7 +24,7 @@ export default function AISettings() {
                 <Zap className="h-4 w-4 text-blue-600" />
                 <span className="font-medium text-blue-900">Model</span>
               </div>
-              <p className="text-sm text-blue-700 font-mono">GPT-4.1-nano</p>
+              <p className="text-sm text-blue-700 font-mono">OpenAI via CrewAI</p>
             </div>
 
             <div className="p-4 bg-green-50 rounded-lg border border-green-200">
@@ -32,7 +32,7 @@ export default function AISettings() {
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <span className="font-medium text-green-900">API Status</span>
               </div>
-              <p className="text-sm text-green-700">✅ Euri API Connected</p>
+              <p className="text-sm text-green-700">FastAPI backend connected</p>
             </div>
           </div>
 
@@ -41,19 +41,19 @@ export default function AISettings() {
             <div className="space-y-2 text-sm">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-gray-600">ATS Keyword Optimization</span>
+                <span className="text-gray-600">CrewAI pipeline orchestration</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-gray-600">Content Enhancement</span>
+                <span className="text-gray-600">Server-side PDF/DOCX extraction</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-gray-600">Format Optimization</span>
+                <span className="text-gray-600">ATS resume rewriting</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-gray-600">Scoring & Analytics</span>
+                <span className="text-gray-600">Scoring and recommendations</span>
               </div>
             </div>
           </div>

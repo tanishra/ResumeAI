@@ -8,20 +8,11 @@ import {
   Settings, 
   Menu, 
   X, 
-  Star,
   ExternalLink,
-  HelpCircle,
   Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  UserButton,
-} from '@clerk/nextjs';
-
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -84,7 +75,6 @@ export default function Header() {
           </motion.div>
 
           {/* Desktop Navigation */}
-          <div className='ml-43'>
           <nav className="hidden md:flex items-center space-x-6">
             {navItems.map((item, index) => (
               <motion.a
@@ -102,7 +92,6 @@ export default function Header() {
               </motion.a>
             ))}
           </nav>
-          </div>
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
@@ -150,52 +139,24 @@ export default function Header() {
               </Button>
             </motion.div>
 
-            {/* Get Started Button */}
-            {/* <motion.div
+            <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.6 }}
             >
-              {/* shadow-xl hover:shadow-lg transition-all duration-200 */}
-              {/* <Button 
+              <Button
                 size="sm"
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-transform duration-200 transform hover:scale-105"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white transition-transform duration-200 transform hover:scale-105 hover:from-blue-700 hover:to-indigo-700"
+                onClick={() =>
+                  document
+                    .getElementById('resume-analyzer')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
               >
                 <Zap className="h-4 w-4 mr-2" />
-                Get Started
+                Analyze Resume
               </Button>
-            </motion.div>  */}
-
-             <SignedOut>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.6 }}
-              >
-                <SignInButton mode="modal">
-                  {/* This div wrapper prevents the warning */}
-                  <div>
-                    <Button
-                      size="sm"
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-transform duration-200 transform hover:scale-105"
-                    >
-                      <Zap className="h-4 w-4 mr-2" />
-                      Get Started
-                    </Button>
-                  </div>
-                </SignInButton>
-              </motion.div>
-            </SignedOut>
-
-            <SignedIn>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.6 }}
-              >
-                <UserButton afterSignOutUrl="/" />
-              </motion.div>
-            </SignedIn>
+            </motion.div>
 
             {/* Mobile Menu Button */}
             <motion.button
