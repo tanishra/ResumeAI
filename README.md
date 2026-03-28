@@ -1,225 +1,79 @@
-# 🧠 ResumeAI - ATS Optimization System powered by CrewAI
+<div align="center">
 
-A complete multi-agent AI system that transforms resumes into ATS-optimized versions using CrewAI framework and Euri AI models.
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,50:1d4ed8,100:312e81&height=220&section=header&text=ResumeAI&fontSize=72&fontColor=FFFFFF&fontAlignY=40&desc=ATS%20Resume%20Optimization%20with%20Next.js%2C%20FastAPI%20and%20CrewAI&descAlignY=63&descColor=ffffff&descSize=18" width="100%"/>
 
-## 🚀 Live Demo
-You can access the live, deployed version of ResumeAI here: [Link](https://resume-ai-five-snowy.vercel.app)  
+<br/>
 
-## 🚀 Quick Start
+[![Next.js](https://img.shields.io/badge/Next.js-15-111827?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![CrewAI](https://img.shields.io/badge/CrewAI-Multi--Agent-2563EB?style=for-the-badge)](https://www.crewai.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Frontend-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Python](https://img.shields.io/badge/Python-Backend-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org/)
 
-### 1. Install Dependencies
+<br/>
+
+> **Upload a resume, paste a target job description, and generate a stronger ATS-ready version automatically.**
+> **ResumeAI extracts content, runs a CrewAI optimization pipeline, and returns scoring feedback with downloadable output.**
+
+<br/>
+
+</div>
+
+## What It Does
+
+- Accepts `pdf`, `docx`, and `txt` resumes
+- Extracts resume text on the backend
+- Runs a multi-step CrewAI pipeline for cleanup, ATS rewrite, refinement, and evaluation
+- Returns downloadable output and ATS scoring feedback in the frontend
+
+## Run Locally
+
+### Backend
+
 ```bash
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
+uvicorn backend.app.main:app --reload
 ```
 
-### 2. Setup Euri API Key
+Create a root `.env` file:
+
 ```bash
-# Edit .env and add your Euri API key
-EURI_API_KEY=euri-your-actual-api-key-here
-EURI_API_ENDPOINT=euri-endpoint-here
-EURI_MODEL=gpt-4.1-nano
+OPENAI_API_KEY=your_api_key_here
+OPENAI_MODEL=gpt-4o-mini
 ```
 
-### 3. Run Application
+### Frontend
+
 ```bash
-streamlit run app.py
+cd frontend
+npm install
+npm run dev
 ```
 
-Open browser to: **http://localhost:8501**
+Create `frontend/.env.local`:
 
----
-## 🚀 How to Run the Application
-
-### 1. Clone the Repository
 ```bash
-git clone https://github.com/tanishra/ResumeAI.git
-cd ResumeAI
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
----
+## Project Structure
 
-### 2. Backend Setup (Streamlit + CrewAI)
+- `frontend/` Next.js interface
+- `backend/` FastAPI API layer
+- `crew_app/` CrewAI agents, tasks, and pipeline
 
-1. Navigate to the backend folder:
-   ```bash
-   cd backend
-   ```
+## Main API
 
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv resumeai
-   source resumeai/bin/activate   # On macOS/Linux
-   resumeai\Scripts\activate    # On Windows
-   ```
+`POST /resume/analyze`
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Add your OpenAI or EuriAI API key to `.env` file:
-   ```
-   EURI_API_KEY=your_openai_api_key_here
-   EURI_API_ENDPOINT=euri-endpoint-here
-   ```
-
-5. Run the backend server:
-   ```bash
-   uvicorn backend.app.main:app --reload
-   ```
-
----
-
-### 3. Frontend Setup (Next.js + TypeScript)
-
-1. Navigate to the frontend folder:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-By default, the frontend runs at: **http://localhost:3000**
-
----
-
-## 🤖 AI Agents Architecture
-
-### Agent 1: Resume Parsing Specialist
-- **Role:** Extract and clean resume text
-- **Goal:** Convert raw resume into structured, clean text
-- **Tasks:** Remove headers/footers, normalize formatting, preserve content structure
-
-### Agent 2: ATS Optimization Writer  
-- **Role:** Rewrite resume for ATS compatibility
-- **Goal:** Match job requirements while maintaining truthfulness
-- **Tasks:** Integrate keywords, use standard sections, optimize for ATS parsing
-
-### Agent 3: Bullet Point Refiner
-- **Role:** Polish achievements with metrics
-- **Goal:** Transform bland bullets into impactful statements
-- **Tasks:** Add action verbs, quantify results, improve clarity
-
-### Agent 4: ATS Evaluator
-- **Role:** Score and evaluate final resume
-- **Goal:** Provide comprehensive ATS assessment
-- **Tasks:** Rate sections, identify missing keywords, suggest improvements
-
----
-
-## 🔧 Code Explanation
-
-### Core Components
-
-#### 1. Agents (`crew_app/agents.py`)
-```python
-def build_parser_agent():
-    return Agent(
-        role="Resume Parsing Specialist",
-        goal="Extract clean, structured text from resume",
-        backstory="Meticulous about preserving content while removing artifacts",
-        model=OPENAI_MODEL,
-        temperature=0.0  # Deterministic for consistent parsing
-    )
-```
-
-#### 2. Tasks (`crew_app/tasks.py`)
-```python
-def parse_resume_task(agent, raw_resume_text):
-    return Task(
-        description=f"Clean and normalize: {raw_resume_text}",
-        agent=agent,
-        expected_output="Cleaned resume text preserving structure"
-    )
-```
-
-#### 3. Pipeline (`crew_app/crew.py`)
-```python
-def run_pipeline(raw_resume_text, job_title, job_description):
-    # Create agents
-    parser = build_parser_agent()
-    writer = build_ats_writer_agent()
-    refiner = build_refiner_agent()
-    evaluator = build_evaluator_agent()
-    
-    # Execute sequential pipeline
-    # Stage 1: Parse and clean
-    parse_crew = Crew(agents=[parser], tasks=[parse_task])
-    cleaned = parse_crew.kickoff()
-    
-    # Stage 2: ATS optimization
-    rewrite_crew = Crew(agents=[writer], tasks=[rewrite_task])
-    rewritten = rewrite_crew.kickoff()
-    
-    # Stage 3: Bullet refinement
-    refine_crew = Crew(agents=[refiner], tasks=[refine_task])
-    final_resume = refine_crew.kickoff()
-    
-    # Stage 4: Evaluation
-    eval_crew = Crew(agents=[evaluator], tasks=[eval_task])
-    evaluation = eval_crew.kickoff()
-    
-    return cleaned, rewritten, final_resume, evaluation
-```
-
-#### 4. File Processing (`crew_app/tools/file_loader.py`)
-```python
-def detect_and_extract(filename: str, file_bytes: bytes):
-    if filename.lower().endswith(".pdf"):
-        return "pdf", extract_text_from_pdf(file_bytes)
-    elif filename.lower().endswith(".docx"):
-        return "docx", extract_text_from_docx(file_bytes)
-    else:
-        return "txt", file_bytes.decode("utf-8", errors="ignore")
-```
-
----
-
-## 🎯 How It Works
-
-### Step 1: File Upload
-- User uploads PDF, DOCX, or TXT resume
-- `file_loader.py` extracts raw text using pypdf/python-docx
-- Text is passed to AI pipeline
-
-### Step 2: AI Processing Pipeline
-1. **Parse Agent** cleans and normalizes text
-2. **Writer Agent** rewrites for job-specific keywords  
-3. **Refiner Agent** polishes bullets with metrics
-4. **Evaluator Agent** scores and provides feedback
-
-### Step 3: Results Display
-- 4 tabs show each processing stage
-- Download options: TXT and DOCX formats
-- ATS evaluation with scores and suggestions
-
----
-
-## 🛠️ Technical Details
-
-### CrewAI Framework
-- **Crew:** Manages agent collaboration
-- **Agent:** AI entity with specific role and capabilities
-- **Task:** Specific work assignment with expected output
-- **Process:** Sequential execution of tasks
-
-### Key Features
-- **Multi-format Support:** PDF, DOCX, TXT files
-- **Real-time Processing:** Live AI agent execution
-- **ATS Optimization:** Keyword matching and formatting
-- **Comprehensive Evaluation:** 100-point scoring system
-- **Export Options:** Multiple download formats
+Form fields:
+- `file`
+- `job_title`
+- `job_description`
 
 ### Cost Optimization
-- Uses `gpt-4.1-nano` for cost-effective processing
+- Uses `gpt-4.1-mini` for cost-effective processing
 - Sequential processing prevents unnecessary API calls
 - Efficient prompt engineering for focused tasks
 
@@ -307,50 +161,6 @@ Could not extract text from file
 
 ---
 
-## 🎯 Usage Examples
-
-### Basic Usage
-1. Upload resume file
-2. Enter target job title: "Data Scientist"
-3. Paste job description
-4. Click "Run ATS Agent"
-5. Review 4-stage results
-6. Download optimized resume
-
-### Advanced Customization
-- Modify agent roles in `crew_app/agents.py`
-- Adjust task descriptions in `crew_app/tasks.py`
-- Change AI model in `.env`: `OPENAI_MODEL=gpt-4o`
-- Add new agents for specific industries
-
----
-
-## 📈 Performance Metrics
-
-- **Processing Time:** 30-60 seconds per resume
-- **Accuracy:** 85-95% keyword matching
-- **Cost:** ~$0.01-0.05 per resume with gpt-4o-mini
-- **File Support:** PDF, DOCX, TXT up to 200MB
-- **ATS Compatibility:** Standard sections, clean formatting
-
----
-
-## 🚀 Next Steps
-
-### Enhancements
-- Add industry-specific templates
-- Implement batch processing
-- Create job board integrations
-- Add A/B testing for different approaches
-
-### Scaling
-- Deploy on cloud platforms (AWS, GCP, Azure)
-- Add user authentication and resume storage
-- Implement analytics and success tracking
-- Create API for integration with other tools
-
----
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -358,4 +168,3 @@ Could not extract text from file
 3. Commit changes: `git commit -m 'Add feature'`
 4. Push to branch: `git push origin feature-name`
 5. Submit pull request
-
