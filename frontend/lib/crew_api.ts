@@ -8,6 +8,7 @@ export interface EvaluationResult {
   quick_wins?: string[];
   strengths?: string[];
   missing_keywords?: string[];
+  summary?: string;
   recommendation?: string;
   raw_output?: string;
 }
