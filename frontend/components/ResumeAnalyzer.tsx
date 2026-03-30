@@ -181,6 +181,7 @@ export default function ResumeAnalyzer({
 
           <FileUpload
             onFileUpload={handleFileUpload}
+            onFileClear={() => setUploadedFile(null)}
             acceptedTypes={['.pdf', '.docx', '.txt']}
             maxSize={10}
             isUploading={isAnalyzing}

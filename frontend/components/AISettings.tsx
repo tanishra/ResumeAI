@@ -1,10 +1,67 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Zap, CheckCircle } from 'lucide-react';
+import { Settings, Zap, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 export default function AISettings() {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const [status, setStatus] = useState<'checking' | 'connected' | 'offline'>('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkBackendHealth() {
+      try {
+        const response = await fetch(`${apiBaseUrl}/health`, {
+          method: 'GET',
+          cache: 'no-store',
+        });
+
+        if (!cancelled) {
+          setStatus(response.ok ? 'connected' : 'offline');
+        }
+      } catch {
+        if (!cancelled) {
+          setStatus('offline');
+        }
+      }
+    }
+
+    checkBackendHealth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl]);
+
+  const statusCopy = {
+    checking: {
+      icon: Loader2,
+      label: 'Checking backend',
+      tone: 'text-amber-700',
+      box: 'bg-amber-50 border-amber-200',
+      iconClass: 'animate-spin text-amber-600',
+    },
+    connected: {
+      icon: CheckCircle,
+      label: 'FastAPI backend connected',
+      tone: 'text-green-700',
+      box: 'bg-green-50 border-green-200',
+      iconClass: 'text-green-600',
+    },
+    offline: {
+      icon: AlertCircle,
+      label: 'Backend unavailable',
+      tone: 'text-red-700',
+      box: 'bg-red-50 border-red-200',
+      iconClass: 'text-red-600',
+    },
+  }[status];
+
+  const StatusIcon = statusCopy.icon;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -27,12 +84,13 @@ export default function AISettings() {
               <p className="text-sm text-blue-700 font-mono">OpenAI via CrewAI</p>
             </div>
 
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className={`p-4 rounded-lg border ${statusCopy.box}`}>
               <div className="flex items-center space-x-2 mb-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
+                <StatusIcon className={`h-4 w-4 ${statusCopy.iconClass}`} />
                 <span className="font-medium text-green-900">API Status</span>
               </div>
-              <p className="text-sm text-green-700">FastAPI backend connected</p>
+              <p className={`text-sm ${statusCopy.tone}`}>{statusCopy.label}</p>
+              <p className="mt-1 break-all text-xs text-gray-500">{apiBaseUrl}</p>
             </div>
           </div>
 

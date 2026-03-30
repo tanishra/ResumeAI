@@ -148,6 +148,7 @@ function EvaluationPanel({ evaluation }: { evaluation: EvaluationResult }) {
   const scoreMap = normalized.scores || normalized.breakdown || {};
   const suggestions = normalized.suggestions || normalized.quick_wins || [];
   const missingKeywords = normalized.missing_keywords || [];
+  const strengths = normalized.strengths || [];
 
   if (normalized.raw_output && Object.keys(scoreMap).length === 0) {
     return (
@@ -201,6 +202,43 @@ function EvaluationPanel({ evaluation }: { evaluation: EvaluationResult }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-blue-800">
+            <FileText className="h-4 w-4" />
+            Summary
+          </div>
+          <p className="text-sm leading-6 text-blue-950">
+            {normalized.summary || 'No summary returned.'}
+          </p>
+          <p className="mt-4 text-sm leading-6 text-blue-900">
+            {normalized.recommendation || 'No recommendation returned.'}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-emerald-800">
+            <CheckCircle className="h-4 w-4" />
+            Strengths
+          </div>
+          <div className="space-y-3">
+            {strengths.length ? (
+              strengths.map((strength) => (
+                <div
+                  key={strength}
+                  className="flex items-start gap-2 text-sm text-emerald-950"
+                >
+                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>{strength}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-emerald-900">No strengths returned.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-green-800">
             <Lightbulb className="h-4 w-4" />
@@ -244,6 +282,12 @@ function EvaluationPanel({ evaluation }: { evaluation: EvaluationResult }) {
           </div>
         </div>
       </div>
+
+      {normalized.raw_output ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+          The model response required normalization before rendering structured results.
+        </div>
+      ) : null}
     </div>
   );
 }

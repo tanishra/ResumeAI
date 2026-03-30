@@ -150,6 +150,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import type { FileRejection } from 'react-dropzone';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, X, Loader2 } from 'lucide-react';
@@ -161,6 +162,7 @@ interface FileUploadProps {
   maxSize: number;
   isUploading?: boolean;
   progress?: number;
+  onFileClear?: () => void;
 }
 
 export default function FileUpload({
@@ -168,16 +170,18 @@ export default function FileUpload({
   acceptedTypes,
   maxSize,
   isUploading = false,
-  progress = 0
+  progress = 0,
+  onFileClear,
 }: FileUploadProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
     setError(null);
-    
+
     if (rejectedFiles.length > 0) {
-      setError('File type not supported or file too large');
+      const firstError = rejectedFiles[0]?.errors[0];
+      setError(firstError?.message || 'File type not supported or file too large');
       return;
     }
 
@@ -191,7 +195,13 @@ export default function FileUpload({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: acceptedTypes.reduce((acc, type) => {
-      acc[`application/${type.replace('.', '')}`] = [type];
+      if (type === '.pdf') {
+        acc['application/pdf'] = ['.pdf'];
+      } else if (type === '.docx') {
+        acc['application/vnd.openxmlformats-officedocument.wordprocessingml.document'] = ['.docx'];
+      } else if (type === '.txt') {
+        acc['text/plain'] = ['.txt'];
+      }
       return acc;
     }, {} as Record<string, string[]>),
     maxSize: maxSize * 1024 * 1024,
@@ -201,11 +211,11 @@ export default function FileUpload({
   const removeFile = () => {
     setUploadedFile(null);
     setError(null);
+    onFileClear?.();
   };
 
   return (
     <div className="space-y-4">
-      {/* FIX: This is now a standard `div` handling Dropzone props and styling */}
       <div
         {...getRootProps()}
         className={`relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200 ${
@@ -216,7 +226,6 @@ export default function FileUpload({
             : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50'
         }`}
       >
-        {/* FIX: A new, inner `motion.div` handles ONLY the animations, resolving the conflict */}
         <motion.div
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
