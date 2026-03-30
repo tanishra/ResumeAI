@@ -6,4 +6,5 @@ pypdf
 python-docx
 python-dotenv
 python-multipart
+pytest
 uvicorn[standard]
