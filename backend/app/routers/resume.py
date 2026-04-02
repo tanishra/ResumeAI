@@ -42,6 +42,7 @@ async def analyze(
                     "rewritten": results["rewritten"],
                     "final_resume": results["final_resume"],
                     "evaluation": results["evaluation"],
+                    "validation": results["validation"],
                 }
             }
         )

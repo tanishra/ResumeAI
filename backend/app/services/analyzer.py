@@ -1,6 +1,7 @@
 from crew_app.file_tools.file_loader import detect_and_extract
 from crew_app.utils import txt_to_docx_bytes
 from backend.app.services.evaluation import normalize_evaluation_payload
+from backend.app.services.validation import enforce_resume_grounding
 
 def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: str):
     """
@@ -18,16 +19,33 @@ def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: 
         job_description=job_desc.strip()
     )
 
+    validated_rewritten, rewrite_validation = enforce_resume_grounding(
+        source_text=cleaned,
+        candidate_text=rewritten,
+        fallback_text=cleaned,
+        stage="rewrite",
+    )
+    validated_final_resume, final_validation = enforce_resume_grounding(
+        source_text=cleaned,
+        candidate_text=final_resume,
+        fallback_text=validated_rewritten,
+        stage="final_resume",
+    )
+
     parsed_eval = normalize_evaluation_payload(
         raw_output=evaluation,
-        resume_text=final_resume,
+        resume_text=validated_final_resume,
         job_description=job_desc.strip(),
     )
 
     return {
         "cleaned": cleaned,
-        "rewritten": rewritten,
-        "final_resume": final_resume,
+        "rewritten": validated_rewritten,
+        "final_resume": validated_final_resume,
         "evaluation": parsed_eval,
-        "docx_bytes": txt_to_docx_bytes(final_resume),
+        "validation": {
+            "rewrite": rewrite_validation,
+            "final_resume": final_validation,
+        },
+        "docx_bytes": txt_to_docx_bytes(validated_final_resume),
     }

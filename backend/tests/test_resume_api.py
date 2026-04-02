@@ -44,6 +44,10 @@ def test_analyze_returns_structured_results():
             "rewritten": "rewritten",
             "final_resume": "final",
             "evaluation": {"overall_score": 88, "breakdown": {"keyword_match": 4}},
+            "validation": {
+                "rewrite": {"stage": "rewrite", "passed": True, "used_fallback": False, "issues": []},
+                "final_resume": {"stage": "final_resume", "passed": True, "used_fallback": False, "issues": []},
+            },
             "docx_bytes": b"docx",
         }
 
@@ -57,3 +61,4 @@ def test_analyze_returns_structured_results():
     payload = response.json()
     assert payload["success"] is True
     assert payload["results"]["evaluation"]["overall_score"] == 88
+    assert payload["results"]["validation"]["rewrite"]["passed"] is True
