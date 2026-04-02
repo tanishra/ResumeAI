@@ -13,13 +13,51 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import ReactDiffViewer from 'react-diff-viewer-continued';
-import { type AnalysisResults, type EvaluationResult } from '@/lib/crew_api';
+import {
+  type AnalysisResults,
+  type EvaluationResult,
+  type ValidationStageResult,
+} from '@/lib/crew_api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ResultsTabsProps {
   results: AnalysisResults;
+}
+
+function ValidationBanner({ results }: { results: AnalysisResults }) {
+  const stages = Object.values(results.validation || {}) as ValidationStageResult[];
+  const fallbackStages = stages.filter((stage) => stage?.used_fallback);
+
+  if (!fallbackStages.length) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+      <div className="mb-2 flex items-center gap-2 font-semibold">
+        <AlertTriangle className="h-4 w-4" />
+        Grounding protection applied
+      </div>
+      <p>
+        The model introduced unsupported resume details, so ResumeAI fell back to
+        the last grounded version for safety.
+      </p>
+      <div className="mt-3 space-y-2">
+        {fallbackStages.map((stage) => (
+          <div key={stage.stage}>
+            <span className="font-medium">
+              {stage.stage.replace(/_/g, ' ')}:
+            </span>{' '}
+            {stage.issues
+              .map((issue) => `${issue.type} (${issue.items.join(', ')})`)
+              .join(' | ')}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function getEvaluation(result: EvaluationResult): EvaluationResult {
@@ -308,7 +346,10 @@ export default function ResultsTabs({ results }: ResultsTabsProps) {
             <CardTitle className="text-xl">ATS Evaluation</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="space-y-4">
+              <ValidationBanner results={results} />
             <EvaluationPanel evaluation={results.evaluation} />
+            </div>
           </CardContent>
         </Card>
       </TabsContent>

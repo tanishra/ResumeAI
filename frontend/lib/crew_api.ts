@@ -13,11 +13,27 @@ export interface EvaluationResult {
   raw_output?: string;
 }
 
+export interface ValidationStageResult {
+  stage: string;
+  passed: boolean;
+  used_fallback: boolean;
+  issues: Array<{
+    type: string;
+    items: string[];
+  }>;
+}
+
+export interface ValidationResult {
+  rewrite?: ValidationStageResult;
+  final_resume?: ValidationStageResult;
+}
+
 export interface AnalysisResults {
   cleaned: string;
   rewritten: string;
   final_resume: string;
   evaluation: EvaluationResult;
+  validation?: ValidationResult;
 }
 
 export interface AnalysisResponse {
