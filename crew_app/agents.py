@@ -8,11 +8,7 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY environment variable is required")
 
 
 class LangChainOpenAILLM(BaseLLM):
@@ -96,17 +92,15 @@ class LangChainOpenAILLM(BaseLLM):
 
 
 def _build_llm(temperature: float) -> LangChainOpenAILLM:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY environment variable is required")
+
     return LangChainOpenAILLM(
         model=OPENAI_MODEL,
-        api_key=OPENAI_API_KEY,
+        api_key=api_key,
         temperature=temperature,
     )
-
-
-parser_llm = _build_llm(0.0)
-writer_llm = _build_llm(0.3)
-evaluator_llm = _build_llm(0.0)
-refiner_llm = _build_llm(0.2)
 
 
 def build_parser_agent():
@@ -117,7 +111,7 @@ def build_parser_agent():
             "You efficiently clean resume text by removing artifacts and normalizing formatting. "
             "Focus on speed and accuracy - preserve all important content while removing noise."
         ),
-        llm=parser_llm,
+        llm=_build_llm(0.0),
         max_iter=1,
         max_execution_time=120,
     )
@@ -128,11 +122,11 @@ def build_ats_writer_agent():
         role="ATS Optimization Writer",
         goal="Create a high-scoring ATS-optimized resume that matches job requirements perfectly.",
         backstory=(
-            "You are an expert at transforming resumes into ATS-friendly formats that score 80+ points. "
-            "You strategically place keywords, use strong action verbs, and quantify all achievements. "
-            "You work quickly and deliver results that pass ATS systems."
+            "You are an expert at transforming resumes into ATS-friendly formats without inventing facts. "
+            "You strategically improve keyword alignment, structure, and phrasing while preserving evidence "
+            "from the source resume. You must prefer omission over fabrication."
         ),
-        llm=writer_llm,
+        llm=_build_llm(0.1),
         max_iter=1,
         max_execution_time=120,
     )
@@ -146,7 +140,7 @@ def build_evaluator_agent():
             "You are a precise ATS scoring expert who quickly identifies gaps and provides specific, "
             "actionable recommendations. You focus on keyword density, section structure, and measurable achievements."
         ),
-        llm=evaluator_llm,
+        llm=_build_llm(0.0),
         max_iter=1,
         max_execution_time=120,
     )
@@ -157,10 +151,10 @@ def build_refiner_agent():
         role="Bullet Point Refiner",
         goal="Transform bullet points into high-impact, ATS-optimized statements with strong metrics.",
         backstory=(
-            "You excel at creating powerful bullet points that combine action verbs, specific "
-            "achievements, and quantified results. You work efficiently to maximize impact."
+            "You excel at improving bullet clarity and impact without adding unsupported metrics or claims. "
+            "You strengthen phrasing only when the source resume supports it."
         ),
-        llm=refiner_llm,
+        llm=_build_llm(0.0),
         max_iter=1,
         max_execution_time=120,
     )
