@@ -18,10 +18,12 @@ def rewrite_for_ats_task(agent, cleaned_resume_text, job_title, job_description)
             f"Rewrite resume for {job_title}:\n\n"
             f"JOB: {job_description}\n\n"
             f"RESUME: {cleaned_resume_text}\n\n"
-            "Improve ATS alignment using only facts already present in the resume. "
+            "Rewrite the resume to improve ATS alignment using only facts already present in the resume. "
+            "Preserve employer names, dates, titles, education, projects, skills, and metrics unless you are only reordering or rephrasing them. "
             "Do not invent employers, dates, projects, technologies, certifications, degrees, metrics, or outcomes. "
             "If the source resume lacks a metric, improve the wording without adding a number. "
-            "Match relevant job keywords when truthful, keep the resume realistic, and return only the rewritten resume text."
+            "Prefer conservative edits over aggressive rewriting. "
+            "Return only the rewritten resume text with no code fences, intro, or commentary."
         ),
         agent=agent,
         expected_output="ATS-optimized resume with keyword placement and metrics."
@@ -33,7 +35,8 @@ def refine_bullets_task(agent, rewritten_resume_text):
             f"Refine this resume for clarity and impact:\n\n{rewritten_resume_text}\n\n"
             "Strengthen verbs, tighten phrasing, and improve readability while preserving factual accuracy. "
             "Do not add numbers, metrics, tools, achievements, or claims that are not already supported by the text. "
-            "Return only the refined resume text."
+            "Keep the same overall sections and factual content. "
+            "Return only the refined resume text with no code fences, intro, or commentary."
         ),
         agent=agent,
         expected_output="Resume with enhanced bullet points and metrics."
