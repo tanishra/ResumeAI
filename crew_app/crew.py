@@ -1,4 +1,5 @@
 import os
+import re
 from crewai import Crew, Process
 import sys
 from .agents import (
@@ -11,6 +12,59 @@ from .tasks import (
 )
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _sanitize_text_output(value: object) -> str:
+    text = str(value).strip()
+    if not text:
+        return ""
+
+    fenced_match = re.match(r"^```(?:[\w+-]+)?\s*(.*?)```$", text, flags=re.DOTALL)
+    if fenced_match:
+        text = fenced_match.group(1).strip()
+
+    lines = [line.rstrip() for line in text.splitlines()]
+    while lines and not lines[0].strip():
+        lines.pop(0)
+
+    # Crew/LLM runs sometimes prepend labels like "Here is the rewritten resume:"
+    while lines and re.match(
+        r"^(?:here(?:'s| is)\b|(?:rewritten|refined|cleaned) resume\s*:)\s*",
+        lines[0].strip(),
+        flags=re.IGNORECASE,
+    ):
+        lines.pop(0)
+
+    return "\n".join(lines).strip()
+
+
+def _sanitize_evaluation_output(value: object) -> str:
+    text = _sanitize_text_output(value)
+    if not text:
+        return ""
+
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        return text[start : end + 1].strip()
+
+    return text
+
+
+def _run_stage(agent, task, fallback_text: str, *, sanitize_output=_sanitize_text_output) -> str:
+    try:
+        crew = Crew(
+            agents=[agent],
+            tasks=[task],
+            process=Process.sequential,
+            verbose=False,
+            tracing=False
+        )
+        result = crew.kickoff()
+        cleaned_result = sanitize_output(result)
+        return cleaned_result or fallback_text
+    except Exception:
+        return fallback_text
 
 def build_crew(raw_resume_text: str, job_title: str, job_description: str):
     parser = build_parser_agent()
@@ -42,60 +96,24 @@ def run_pipeline(raw_resume_text: str, job_title: str, job_description: str):
 
     # Create tasks
     t_parse = parse_resume_task(parser, raw_resume_text)
-    
-    # Build and run crew for parsing
-    parse_crew = Crew(
-        agents=[parser],
-        tasks=[t_parse],
-        process=Process.sequential,
-        verbose=True,
-        tracing=False
-    )
-    
-    # Execute parsing
-    parse_result = parse_crew.kickoff()
-    cleaned = str(parse_result).strip()
+
+    cleaned = _run_stage(parser, t_parse, raw_resume_text)
 
     # Create rewrite task with cleaned resume
     t_rewrite = rewrite_for_ats_task(writer, cleaned, job_title, job_description)
-    rewrite_crew = Crew(
-        agents=[writer],
-        tasks=[t_rewrite],
-        process=Process.sequential,
-        verbose=True,
-        tracing=False
-    )
-    
-    # Execute rewriting
-    rewrite_result = rewrite_crew.kickoff()
-    rewritten = str(rewrite_result).strip()
+    rewritten = _run_stage(writer, t_rewrite, cleaned)
 
     # Create refine task with rewritten resume
     t_refine = refine_bullets_task(refiner, rewritten)
-    refine_crew = Crew(
-        agents=[refiner],
-        tasks=[t_refine],
-        process=Process.sequential,
-        verbose=True,
-        tracing=False
-    )
-    
-    # Execute refining
-    refine_result = refine_crew.kickoff()
-    final_resume = str(refine_result).strip()
+    final_resume = _run_stage(refiner, t_refine, rewritten)
 
     # Create evaluation task with final resume
     t_eval = evaluate_ats_task(evaluator, final_resume, job_title, job_description)
-    eval_crew = Crew(
-        agents=[evaluator],
-        tasks=[t_eval],
-        process=Process.sequential,
-        verbose=True,
-        tracing=False
+    evaluation = _run_stage(
+        evaluator,
+        t_eval,
+        "",
+        sanitize_output=_sanitize_evaluation_output,
     )
-    
-    # Execute evaluation
-    eval_result = eval_crew.kickoff()
-    evaluation = str(eval_result).strip()
 
     return cleaned, rewritten, final_resume, evaluation
