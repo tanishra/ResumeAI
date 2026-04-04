@@ -1,23 +1,26 @@
 import os
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
-from crewai import Agent, BaseLLM
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 
-class LangChainOpenAILLM(BaseLLM):
+class LangChainOpenAILLM:
     def __init__(self, model: str, api_key: str, temperature: Optional[float] = None):
-        super().__init__(model=model, temperature=temperature)
+        from langchain_openai import ChatOpenAI
+
+        self.model = model
+        self.temperature = temperature if temperature is not None else 0.0
+        self.stop: list[str] = []
         self.client = ChatOpenAI(
             api_key=api_key,
             model=model,
-            temperature=temperature if temperature is not None else 0.0,
+            temperature=self.temperature,
             timeout=120,
             max_retries=2,
         )
@@ -29,19 +32,11 @@ class LangChainOpenAILLM(BaseLLM):
         callbacks: Optional[List[Any]] = None,
         available_functions: Optional[Dict[str, Any]] = None,
     ) -> str:
+        del tools, callbacks, available_functions
         normalized_messages = self._normalize_messages(messages)
         response = self.client.invoke(normalized_messages)
         content = self._extract_content(response.content)
         return self._apply_stop_words(content)
-
-    def supports_function_calling(self) -> bool:
-        return False
-
-    def supports_stop_words(self) -> bool:
-        return False
-
-    def get_context_window_size(self) -> int:
-        return 128000
 
     def _normalize_messages(
         self, messages: Union[str, List[Dict[str, Any]]]
@@ -84,11 +79,18 @@ class LangChainOpenAILLM(BaseLLM):
         return str(content)
 
     def _apply_stop_words(self, content: str) -> str:
-        stop_words = getattr(self, "stop", None) or []
-        for stop_word in stop_words:
+        for stop_word in self.stop:
             if stop_word in content:
                 return content.split(stop_word)[0]
         return content
+
+
+@dataclass(frozen=True)
+class ResumeAgent:
+    role: str
+    goal: str
+    backstory: str
+    llm: LangChainOpenAILLM
 
 
 def _build_llm(temperature: float) -> LangChainOpenAILLM:
@@ -103,8 +105,8 @@ def _build_llm(temperature: float) -> LangChainOpenAILLM:
     )
 
 
-def build_parser_agent():
-    return Agent(
+def build_parser_agent() -> ResumeAgent:
+    return ResumeAgent(
         role="Resume Parsing Specialist",
         goal="Extract clean, structured text from a resume suitable for ATS optimization.",
         backstory=(
@@ -112,13 +114,11 @@ def build_parser_agent():
             "Focus on speed and accuracy - preserve all important content while removing noise."
         ),
         llm=_build_llm(0.0),
-        max_iter=1,
-        max_execution_time=120,
     )
 
 
-def build_ats_writer_agent():
-    return Agent(
+def build_ats_writer_agent() -> ResumeAgent:
+    return ResumeAgent(
         role="ATS Optimization Writer",
         goal="Create a high-scoring ATS-optimized resume that matches job requirements perfectly.",
         backstory=(
@@ -127,13 +127,11 @@ def build_ats_writer_agent():
             "from the source resume. You must prefer omission over fabrication."
         ),
         llm=_build_llm(0.1),
-        max_iter=1,
-        max_execution_time=120,
     )
 
 
-def build_evaluator_agent():
-    return Agent(
+def build_evaluator_agent() -> ResumeAgent:
+    return ResumeAgent(
         role="ATS Evaluator",
         goal="Provide accurate ATS scores and actionable improvement recommendations.",
         backstory=(
@@ -141,13 +139,11 @@ def build_evaluator_agent():
             "actionable recommendations. You focus on keyword density, section structure, and measurable achievements."
         ),
         llm=_build_llm(0.0),
-        max_iter=1,
-        max_execution_time=120,
     )
 
 
-def build_refiner_agent():
-    return Agent(
+def build_refiner_agent() -> ResumeAgent:
+    return ResumeAgent(
         role="Bullet Point Refiner",
         goal="Transform bullet points into high-impact, ATS-optimized statements with strong metrics.",
         backstory=(
@@ -155,6 +151,4 @@ def build_refiner_agent():
             "You strengthen phrasing only when the source resume supports it."
         ),
         llm=_build_llm(0.0),
-        max_iter=1,
-        max_execution_time=120,
     )
