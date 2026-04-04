@@ -1,20 +1,16 @@
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from crew_app.crew import run_pipeline
 
 
 def test_run_pipeline_sanitizes_stage_outputs():
-    crew_instances = [
-        Mock(kickoff=Mock(return_value="```text\nCLEANED RESUME\n- Built APIs\n```")),
-        Mock(kickoff=Mock(return_value="Here is the rewritten resume:\nREWRITTEN RESUME\n- Built APIs with Python")),
-        Mock(kickoff=Mock(return_value="```markdown\nFINAL RESUME\n- Built scalable APIs\n```")),
-        Mock(
-            kickoff=Mock(
-                return_value=(
-                    "ATS evaluation follows:\n"
-                    '{\n  "overall_score": 82,\n  "breakdown": {"keyword_match": 4}\n}'
-                )
-            )
+    stage_outputs = [
+        "```text\nCLEANED RESUME\n- Built APIs\n```",
+        "Here is the rewritten resume:\nREWRITTEN RESUME\n- Built APIs with Python",
+        "```markdown\nFINAL RESUME\n- Built scalable APIs\n```",
+        (
+            "ATS evaluation follows:\n"
+            '{\n  "overall_score": 82,\n  "breakdown": {"keyword_match": 4}\n}'
         ),
     ]
 
@@ -26,7 +22,7 @@ def test_run_pipeline_sanitizes_stage_outputs():
          patch("crew_app.crew.rewrite_for_ats_task", return_value=object()), \
          patch("crew_app.crew.refine_bullets_task", return_value=object()), \
          patch("crew_app.crew.evaluate_ats_task", return_value=object()), \
-         patch("crew_app.crew.Crew", side_effect=crew_instances):
+         patch("crew_app.crew._invoke_task", side_effect=stage_outputs):
         cleaned, rewritten, final_resume, evaluation = run_pipeline(
             raw_resume_text="Raw resume text",
             job_title="Engineer",
@@ -40,11 +36,11 @@ def test_run_pipeline_sanitizes_stage_outputs():
 
 
 def test_run_pipeline_falls_back_when_stage_fails():
-    crew_instances = [
-        Mock(kickoff=Mock(side_effect=RuntimeError("parse failed"))),
-        Mock(kickoff=Mock(side_effect=RuntimeError("rewrite failed"))),
-        Mock(kickoff=Mock(return_value="Refined resume text")),
-        Mock(kickoff=Mock(side_effect=RuntimeError("evaluation failed"))),
+    stage_outputs = [
+        RuntimeError("parse failed"),
+        RuntimeError("rewrite failed"),
+        "Refined resume text",
+        RuntimeError("evaluation failed"),
     ]
 
     with patch("crew_app.crew.build_parser_agent", return_value=object()), \
@@ -55,7 +51,7 @@ def test_run_pipeline_falls_back_when_stage_fails():
          patch("crew_app.crew.rewrite_for_ats_task", return_value=object()), \
          patch("crew_app.crew.refine_bullets_task", return_value=object()), \
          patch("crew_app.crew.evaluate_ats_task", return_value=object()), \
-         patch("crew_app.crew.Crew", side_effect=crew_instances):
+         patch("crew_app.crew._invoke_task", side_effect=stage_outputs):
         cleaned, rewritten, final_resume, evaluation = run_pipeline(
             raw_resume_text="Raw resume text",
             job_title="Engineer",
