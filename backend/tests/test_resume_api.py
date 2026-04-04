@@ -1,6 +1,8 @@
+import io
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+from docx import Document
 
 from backend.app.main import app
 
@@ -62,3 +64,37 @@ def test_analyze_returns_structured_results():
     assert payload["success"] is True
     assert payload["results"]["evaluation"]["overall_score"] == 88
     assert payload["results"]["validation"]["rewrite"]["passed"] is True
+
+
+def test_download_docx_uses_final_resume_without_rerunning_analysis():
+    final_resume = "JANE DOE\nSUMMARY\nBuilt reliable backend APIs."
+
+    with patch("backend.app.routers.resume.analyze_resume") as mock_analyze:
+        response = client.post(
+            "/resume/download-docx",
+            data={"final_resume": final_resume},
+        )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+    assert "attachment; filename=final_resume.docx" == response.headers["content-disposition"]
+    mock_analyze.assert_not_called()
+
+    document = Document(io.BytesIO(response.content))
+    assert [paragraph.text for paragraph in document.paragraphs] == [
+        "JANE DOE",
+        "SUMMARY",
+        "Built reliable backend APIs.",
+    ]
+
+
+def test_download_docx_rejects_empty_final_resume():
+    response = client.post(
+        "/resume/download-docx",
+        data={"final_resume": "   "},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Final resume content is required."

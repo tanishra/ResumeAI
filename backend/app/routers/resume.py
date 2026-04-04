@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from backend.app.services.analyzer import analyze_resume
+from crew_app.utils import txt_to_docx_bytes
 
 router = APIRouter(prefix="/resume", tags=["Resume"])
 
@@ -53,17 +54,14 @@ async def analyze(
 
 @router.post("/download-docx")
 async def download_docx(
-    file: UploadFile,
-    job_title: str = Form(...),
-    job_description: str = Form(...)
+    final_resume: str = Form(...),
 ):
     try:
-        contents = await file.read()
-        _validate_request(file, contents, job_title, job_description)
-        results = analyze_resume(file.filename, contents, job_title, job_description)
+        if not final_resume.strip():
+            raise HTTPException(status_code=400, detail="Final resume content is required.")
 
         return StreamingResponse(
-            iter([results["docx_bytes"]]),
+            iter([txt_to_docx_bytes(final_resume.strip())]),
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={"Content-Disposition": "attachment; filename=final_resume.docx"}
         )
