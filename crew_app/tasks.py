@@ -1,19 +1,28 @@
-from crewai import Task
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class ResumeTask:
+    description: str
+    expected_output: str
+
 
 def parse_resume_task(agent, raw_resume_text):
-    return Task(
+    del agent
+    return ResumeTask(
         description=(
             f"Clean this resume text:\n\n{raw_resume_text}\n\n"
             "Remove OCR/file artifacts, normalize bullets to '-', and preserve every factual detail. "
             "Do not invent, infer, or delete achievements, dates, employers, titles, education, skills, or metrics. "
             "Return only the cleaned resume text."
         ),
-        agent=agent,
-        expected_output=("Clean resume text with proper structure.")
+        expected_output="Clean resume text with proper structure.",
     )
 
+
 def rewrite_for_ats_task(agent, cleaned_resume_text, job_title, job_description):
-    return Task(
+    del agent
+    return ResumeTask(
         description=(
             f"Rewrite resume for {job_title}:\n\n"
             f"JOB: {job_description}\n\n"
@@ -25,12 +34,13 @@ def rewrite_for_ats_task(agent, cleaned_resume_text, job_title, job_description)
             "Prefer conservative edits over aggressive rewriting. "
             "Return only the rewritten resume text with no code fences, intro, or commentary."
         ),
-        agent=agent,
-        expected_output="ATS-optimized resume with keyword placement and metrics."
+        expected_output="ATS-optimized resume with keyword placement and metrics.",
     )
 
+
 def refine_bullets_task(agent, rewritten_resume_text):
-    return Task(
+    del agent
+    return ResumeTask(
         description=(
             f"Refine this resume for clarity and impact:\n\n{rewritten_resume_text}\n\n"
             "Strengthen verbs, tighten phrasing, and improve readability while preserving factual accuracy. "
@@ -38,12 +48,13 @@ def refine_bullets_task(agent, rewritten_resume_text):
             "Keep the same overall sections and factual content. "
             "Return only the refined resume text with no code fences, intro, or commentary."
         ),
-        agent=agent,
-        expected_output="Resume with enhanced bullet points and metrics."
+        expected_output="Resume with enhanced bullet points and metrics.",
     )
 
+
 def evaluate_ats_task(agent, final_resume_text, job_title, job_description):
-    return Task(
+    del agent
+    return ResumeTask(
         description=(
             f"Score this resume for {job_title}:\n\n"
             f"JOB: {job_description}\n\n"
@@ -68,6 +79,5 @@ def evaluate_ats_task(agent, final_resume_text, job_title, job_description):
             "Scores in breakdown must be integers from 1 to 5. overall_score must be 0 to 100. "
             "Base the evaluation only on evidence in the resume and job description."
         ),
-        agent=agent,
-        expected_output="JSON evaluation with scores and recommendations."
+        expected_output="JSON evaluation with scores and recommendations.",
     )
