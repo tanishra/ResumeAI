@@ -6,7 +6,9 @@ import { Settings, Zap, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 export default function AISettings() {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const [backendUrl, setBackendUrl] = useState(
+    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  );
   const [status, setStatus] = useState<'checking' | 'connected' | 'offline'>('checking');
 
   useEffect(() => {
@@ -14,12 +16,19 @@ export default function AISettings() {
 
     async function checkBackendHealth() {
       try {
-        const response = await fetch(`${apiBaseUrl}/health`, {
+        const response = await fetch('/api/health', {
           method: 'GET',
           cache: 'no-store',
         });
 
+        const payload = (await response.json()) as {
+          backendUrl?: string;
+        };
+
         if (!cancelled) {
+          if (payload.backendUrl) {
+            setBackendUrl(payload.backendUrl);
+          }
           setStatus(response.ok ? 'connected' : 'offline');
         }
       } catch {
@@ -34,7 +43,7 @@ export default function AISettings() {
     return () => {
       cancelled = true;
     };
-  }, [apiBaseUrl]);
+  }, []);
 
   const statusCopy = {
     checking: {
@@ -90,7 +99,7 @@ export default function AISettings() {
                 <span className="font-medium text-green-900">API Status</span>
               </div>
               <p className={`text-sm ${statusCopy.tone}`}>{statusCopy.label}</p>
-              <p className="mt-1 break-all text-xs text-gray-500">{apiBaseUrl}</p>
+              <p className="mt-1 break-all text-xs text-gray-500">{backendUrl}</p>
             </div>
           </div>
 
