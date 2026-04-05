@@ -1,10 +1,24 @@
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True)
 class ResumeTask:
     description: str
     expected_output: str
+
+
+def _format_grounding_feedback(issues: list[dict[str, Any]] | None) -> str:
+    if not issues:
+        return ""
+
+    formatted_issues = []
+    for issue in issues:
+        issue_type = str(issue.get("type", "issue")).replace("_", " ")
+        items = ", ".join(str(item) for item in issue.get("items", []))
+        formatted_issues.append(f"- {issue_type}: {items}")
+
+    return "\n".join(formatted_issues)
 
 
 def parse_resume_task(agent, raw_resume_text):
@@ -20,13 +34,35 @@ def parse_resume_task(agent, raw_resume_text):
     )
 
 
-def rewrite_for_ats_task(agent, cleaned_resume_text, job_title, job_description):
+def rewrite_for_ats_task(
+    agent,
+    cleaned_resume_text,
+    job_title,
+    job_description,
+    *,
+    previous_candidate: str | None = None,
+    grounding_issues: list[dict[str, Any]] | None = None,
+):
     del agent
+    repair_context = ""
+    if previous_candidate:
+        repair_context += (
+            f"\nPREVIOUS DRAFT: {previous_candidate}\n\n"
+            "Revise the previous draft instead of starting over from scratch. "
+        )
+    if grounding_issues:
+        repair_context += (
+            "The previous draft introduced unsupported details. Remove or rephrase them while "
+            "keeping grounded improvements where possible.\n"
+            f"Unsupported details:\n{_format_grounding_feedback(grounding_issues)}\n\n"
+        )
+
     return ResumeTask(
         description=(
             f"Rewrite resume for {job_title}:\n\n"
             f"JOB: {job_description}\n\n"
             f"RESUME: {cleaned_resume_text}\n\n"
+            f"{repair_context}"
             "Rewrite the resume to improve ATS alignment using only facts already present in the resume. "
             "Preserve employer names, dates, titles, education, projects, skills, and metrics unless you are only reordering or rephrasing them. "
             "Do not invent employers, dates, projects, technologies, certifications, degrees, metrics, or outcomes. "
@@ -38,11 +74,33 @@ def rewrite_for_ats_task(agent, cleaned_resume_text, job_title, job_description)
     )
 
 
-def refine_bullets_task(agent, rewritten_resume_text):
+def refine_bullets_task(
+    agent,
+    rewritten_resume_text,
+    *,
+    source_resume_text: str | None = None,
+    previous_candidate: str | None = None,
+    grounding_issues: list[dict[str, Any]] | None = None,
+):
     del agent
+    source_context = f"SOURCE OF TRUTH: {source_resume_text}\n\n" if source_resume_text else ""
+    repair_context = ""
+    if previous_candidate:
+        repair_context += (
+            f"PREVIOUS DRAFT: {previous_candidate}\n\n"
+            "Revise the previous draft instead of starting over from scratch. "
+        )
+    if grounding_issues:
+        repair_context += (
+            "The previous draft introduced unsupported details. Remove or rephrase them while "
+            "keeping grounded improvements where possible.\n"
+            f"Unsupported details:\n{_format_grounding_feedback(grounding_issues)}\n\n"
+        )
+
     return ResumeTask(
         description=(
             f"Refine this resume for clarity and impact:\n\n{rewritten_resume_text}\n\n"
+            f"{source_context}{repair_context}"
             "Strengthen verbs, tighten phrasing, and improve readability while preserving factual accuracy. "
             "Do not add numbers, metrics, tools, achievements, or claims that are not already supported by the text. "
             "Keep the same overall sections and factual content. "
