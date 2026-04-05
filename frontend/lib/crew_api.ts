@@ -43,8 +43,7 @@ export interface AnalysisResponse {
 }
 
 export class CrewAPI {
-  private static readonly API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  private static readonly ANALYZE_ROUTE = '/api/analyze_resume';
 
   static async analyzeResume(
     file: File,
@@ -56,7 +55,7 @@ export class CrewAPI {
     formData.append('job_title', jobTitle);
     formData.append('job_description', jobDescription);
 
-    const response = await fetch(`${this.API_BASE_URL}/resume/analyze`, {
+    const response = await fetch(this.ANALYZE_ROUTE, {
       method: 'POST',
       body: formData,
     });
