@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from backend.app.services.analyzer import analyze_resume
+from backend.app.services.errors import ResumeAnalyzerError
 from crew_app.utils import txt_to_docx_bytes
 
 router = APIRouter(prefix="/resume", tags=["Resume"])
@@ -44,13 +45,24 @@ async def analyze(
                     "final_resume": results["final_resume"],
                     "evaluation": results["evaluation"],
                     "validation": results["validation"],
+                    "telemetry": results["telemetry"],
                 }
             }
         )
+    except ResumeAnalyzerError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail,
+            headers={"X-Error-Code": exc.error_code},
+        )
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="The resume analysis request failed unexpectedly.",
+            headers={"X-Error-Code": "unexpected_resume_error"},
+        )
 
 @router.post("/download-docx")
 async def download_docx(
@@ -67,5 +79,9 @@ async def download_docx(
         )
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="The resume document could not be generated.",
+            headers={"X-Error-Code": "docx_generation_error"},
+        )
