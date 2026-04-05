@@ -154,14 +154,12 @@ import type { FileRejection } from 'react-dropzone';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, X, Loader2 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 
 interface FileUploadProps {
   onFileUpload: (file: File) => void;
   acceptedTypes: string[];
   maxSize: number;
   isUploading?: boolean;
-  progress?: number;
   onFileClear?: () => void;
 }
 
@@ -170,7 +168,6 @@ export default function FileUpload({
   acceptedTypes,
   maxSize,
   isUploading = false,
-  progress = 0,
   onFileClear,
 }: FileUploadProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -243,9 +240,10 @@ export default function FileUpload({
               >
                 <Loader2 className="h-12 w-12 text-blue-600 mx-auto animate-spin" />
                 <div className="space-y-2">
-                  <p className="text-blue-600 font-medium">Uploading...</p>
-                  <Progress value={progress} className="w-48 mx-auto" />
-                  <p className="text-sm text-gray-500">{Math.round(progress)}% complete</p>
+                  <p className="text-blue-600 font-medium">Analyzing resume...</p>
+                  <p className="text-sm text-gray-500">
+                    Please wait while the backend extracts, rewrites, and scores your resume.
+                  </p>
                 </div>
               </motion.div>
             ) : uploadedFile ? (
