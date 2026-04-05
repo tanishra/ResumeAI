@@ -28,12 +28,31 @@ export interface ValidationResult {
   final_resume?: ValidationStageResult;
 }
 
+export interface AnalysisTelemetry {
+  file_type?: string;
+  timings_ms?: Record<string, number>;
+  grounding?: Record<
+    string,
+    {
+      repair_attempted?: boolean;
+      repair_succeeded?: boolean;
+      used_fallback?: boolean;
+    }
+  >;
+  evaluation?: {
+    source?: string;
+    parsed_json?: boolean;
+    raw_output_included?: boolean;
+  };
+}
+
 export interface AnalysisResults {
   cleaned: string;
   rewritten: string;
   final_resume: string;
   evaluation: EvaluationResult;
   validation?: ValidationResult;
+  telemetry?: AnalysisTelemetry;
 }
 
 export interface AnalysisResponse {
