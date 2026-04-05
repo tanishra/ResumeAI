@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload,
@@ -24,19 +24,10 @@ interface ResumeAnalyzerProps {
 }
 
 const ANALYSIS_STEPS = [
-  { threshold: 20, message: 'Uploading resume...' },
-  { threshold: 40, message: 'Extracting text...' },
-  { threshold: 65, message: 'Running CrewAI pipeline...' },
-  { threshold: 85, message: 'Scoring ATS alignment...' },
-  { threshold: 100, message: 'Complete!' },
+  'Uploading resume and extracting text',
+  'Running the ATS rewrite pipeline',
+  'Scoring alignment and preparing results',
 ];
-
-function getCurrentStep(progress: number) {
-  return (
-    ANALYSIS_STEPS.find((step) => progress <= step.threshold)?.message ||
-    'Processing...'
-  );
-}
 
 export default function ResumeAnalyzer({
   onAnalysisComplete,
@@ -46,41 +37,7 @@ export default function ResumeAnalyzer({
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const progressIntervalRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (progressIntervalRef.current) {
-        window.clearInterval(progressIntervalRef.current);
-      }
-    };
-  }, []);
-
-  const startProgress = () => {
-    setProgress(8);
-    setCurrentStep(getCurrentStep(8));
-
-    progressIntervalRef.current = window.setInterval(() => {
-      setProgress((previous) => {
-        const next = Math.min(previous + Math.random() * 10, 92);
-        setCurrentStep(getCurrentStep(next));
-        return next;
-      });
-    }, 800);
-  };
-
-  const stopProgress = (finalValue = 100) => {
-    if (progressIntervalRef.current) {
-      window.clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
-
-    setProgress(finalValue);
-    setCurrentStep(getCurrentStep(finalValue));
-  };
 
   const handleFileUpload = async (file: File) => {
     setError(null);
@@ -95,7 +52,6 @@ export default function ResumeAnalyzer({
 
     setError(null);
     setIsAnalyzing(true);
-    startProgress();
 
     try {
       const results = await CrewAPI.analyzeResume(
@@ -104,13 +60,11 @@ export default function ResumeAnalyzer({
         jobDescription.trim()
       );
 
-      stopProgress(100);
       window.setTimeout(() => {
         onAnalysisComplete(results);
         setIsAnalyzing(false);
       }, 300);
     } catch (caughtError) {
-      stopProgress(0);
       setIsAnalyzing(false);
       setError(
         caughtError instanceof Error
@@ -185,7 +139,6 @@ export default function ResumeAnalyzer({
             acceptedTypes={['.pdf', '.docx', '.txt']}
             maxSize={10}
             isUploading={isAnalyzing}
-            progress={progress}
           />
 
           {uploadedFile ? (
@@ -259,17 +212,19 @@ export default function ResumeAnalyzer({
             )}
           </Button>
 
-          {(isAnalyzing || progress > 0) && currentStep ? (
+          {isAnalyzing ? (
             <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-700">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-medium">{currentStep}</span>
-                <span>{Math.round(progress)}%</span>
+              <div className="mb-3 flex items-center gap-2 font-medium">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Analyzing your resume</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-blue-100">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
+              <div className="space-y-2 text-xs text-blue-800">
+                {ANALYSIS_STEPS.map((step) => (
+                  <div key={step} className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                    <span>{step}</span>
+                  </div>
+                ))}
               </div>
             </div>
           ) : null}
