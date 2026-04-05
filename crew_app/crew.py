@@ -122,3 +122,45 @@ def run_pipeline(raw_resume_text: str, job_title: str, job_description: str):
     )
 
     return cleaned, rewritten, final_resume, evaluation
+
+
+def repair_rewrite(
+    cleaned_resume_text: str,
+    previous_candidate: str,
+    validation_issues: list[dict[str, object]],
+    job_title: str,
+    job_description: str,
+) -> str:
+    writer = build_ats_writer_agent()
+    return _run_stage(
+        writer,
+        rewrite_for_ats_task(
+            writer,
+            cleaned_resume_text,
+            job_title,
+            job_description,
+            previous_candidate=previous_candidate,
+            grounding_issues=validation_issues,
+        ),
+        previous_candidate,
+    )
+
+
+def repair_final_resume(
+    source_resume_text: str,
+    rewritten_resume_text: str,
+    previous_candidate: str,
+    validation_issues: list[dict[str, object]],
+) -> str:
+    refiner = build_refiner_agent()
+    return _run_stage(
+        refiner,
+        refine_bullets_task(
+            refiner,
+            rewritten_resume_text,
+            source_resume_text=source_resume_text,
+            previous_candidate=previous_candidate,
+            grounding_issues=validation_issues,
+        ),
+        previous_candidate,
+    )
