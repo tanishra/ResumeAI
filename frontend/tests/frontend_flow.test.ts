@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+// import { CrewAPI } from '../lib/crew_api.ts';
 import { CrewAPI } from '@/lib/crew_api.js';
+// import { forwardAnalyzeRequest } from '../lib/backend_proxy.ts';
 import { forwardAnalyzeRequest } from '@/lib/backend_proxy';
 
 test('frontend analyze flow succeeds through the app-facing route', async () => {
