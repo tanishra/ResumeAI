@@ -129,12 +129,16 @@ def normalize_evaluation_payload(
     raw_output: str,
     resume_text: str,
     job_description: str,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     fallback = build_rule_based_evaluation(resume_text, job_description)
     parsed = extract_json_object(raw_output)
     if not parsed:
         fallback["raw_output"] = raw_output
-        return fallback
+        return fallback, {
+            "source": "rule_based_fallback",
+            "parsed_json": False,
+            "raw_output_included": bool(raw_output.strip()),
+        }
 
     breakdown = parsed.get("breakdown")
     if not isinstance(breakdown, dict):
@@ -162,7 +166,11 @@ def normalize_evaluation_payload(
     if raw_output.strip() and not extract_json_object(raw_output.strip()) == parsed:
         normalized["raw_output"] = raw_output
 
-    return normalized
+    return normalized, {
+        "source": "model_json",
+        "parsed_json": True,
+        "raw_output_included": "raw_output" in normalized,
+    }
 
 
 def _extract_keywords(text: str) -> set[str]:
