@@ -6,15 +6,15 @@
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-111827?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![CrewAI](https://img.shields.io/badge/CrewAI-Multi--Agent-2563EB?style=for-the-badge)](https://www.crewai.com/)
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com/)
+[![LangChain](https://img.shields.io/badge/LangChain-ChatOpenAI-1C3C3C?style=for-the-badge)](https://www.langchain.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Frontend-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Python](https://img.shields.io/badge/Python-Backend-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org/)
 
 <br/>
 
 > **Upload a resume, paste a target job description, and generate a stronger ATS-ready version automatically.**
-> **ResumeAI extracts content, runs a CrewAI optimization pipeline, and returns scoring feedback with downloadable output.**
+> **ResumeAI extracts content, runs a staged OpenAI-powered optimization pipeline, validates grounding, and returns scoring feedback with downloadable output.**
 
 <br/>
 
@@ -24,8 +24,31 @@
 
 - Accepts `pdf`, `docx`, and `txt` resumes
 - Extracts resume text on the backend
-- Runs a multi-step CrewAI pipeline for cleanup, ATS rewrite, refinement, and evaluation
-- Returns downloadable output and ATS scoring feedback in the frontend
+- Runs a staged LLM pipeline for cleanup, ATS rewrite, refinement, and evaluation
+- Validates rewritten output against the source resume and falls back when unsupported claims are introduced
+- Returns downloadable output, grounded resume text, and scoring feedback in the frontend
+
+## How It Actually Works
+
+ResumeAI currently has two interfaces in the repo:
+
+- `frontend/` + `backend/` is the main app path
+- `app.py` is an older Streamlit prototype that still uses the same core pipeline
+
+The active backend flow is:
+
+1. Upload file to FastAPI
+2. Extract text from PDF, DOCX, or TXT
+3. Run four sequential LLM stages:
+   - parsing/cleanup
+   - ATS rewrite
+   - bullet refinement
+   - evaluation
+4. Validate rewritten output against the source resume to catch unsupported dates, metrics, tools, organizations, and credentials
+5. Retry with repair prompts when needed, then fall back to the last grounded version if repair still fails
+6. Normalize evaluation output to JSON, with a rule-based fallback when the model response is malformed
+
+This is a staged pipeline, not a tool-using multi-agent CrewAI runtime.
 
 ## Run Locally
 
@@ -43,6 +66,12 @@ OPENAI_API_KEY=your_api_key_here
 OPENAI_MODEL=gpt-4o-mini
 ```
 
+Run backend tests:
+
+```bash
+env UV_CACHE_DIR=/tmp/uv-cache uv run python backend/run_tests.py
+```
+
 ### Frontend
 
 ```bash
@@ -57,11 +86,18 @@ Create `frontend/.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
+Run frontend tests:
+
+```bash
+npm --prefix frontend test
+```
+
 ## Project Structure
 
 - `frontend/` Next.js interface
 - `backend/` FastAPI API layer
-- `crew_app/` CrewAI agents, tasks, and pipeline
+- `crew_app/` staged LLM pipeline, prompts, and file utilities
+- `app.py` legacy Streamlit interface
 
 ## Main API
 
@@ -72,10 +108,10 @@ Form fields:
 - `job_title`
 - `job_description`
 
-### Cost Optimization
-- Uses `gpt-4.1-mini` for cost-effective processing
-- Sequential processing prevents unnecessary API calls
-- Efficient prompt engineering for focused tasks
+### Runtime Notes
+- Defaults to `gpt-4o-mini` unless `OPENAI_MODEL` is overridden
+- Uses sequential stage execution to keep prompts focused and isolate failures
+- Adds grounding validation and evaluation normalization to reduce unsafe or malformed output
 
 ---
 
@@ -137,7 +173,7 @@ Senior Software Developer | TechCorp | 2020-Present
 
 ---
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -147,11 +183,11 @@ AuthenticationError: Incorrect API key
 ```
 **Solution:** Add valid OpenAI API key to `.env` file
 
-**Import Error**
+**Test Runner Plugin Error**
+```bash
+TypeError: ForwardRef._evaluate() missing 1 required keyword-only argument: 'recursive_guard'
 ```
-ModuleNotFoundError: No module named 'crewai'
-```
-**Solution:** Install requirements: `pip install -r requirements.txt`
+**Solution:** Use the repo-backed runner `env UV_CACHE_DIR=/tmp/uv-cache uv run python backend/run_tests.py`, which disables third-party pytest plugin autoload before importing pytest.
 
 **File Upload Error**
 ```
