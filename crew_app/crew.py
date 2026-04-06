@@ -84,23 +84,6 @@ def _run_stage(
         return fallback_text
 
 
-def build_crew(raw_resume_text: str, job_title: str, job_description: str) -> dict[str, object]:
-    parser = build_parser_agent()
-    writer = build_ats_writer_agent()
-    refiner = build_refiner_agent()
-    evaluator = build_evaluator_agent()
-
-    return {
-        "agents": [parser, writer, refiner, evaluator],
-        "tasks": [
-            parse_resume_task(parser, raw_resume_text),
-            rewrite_for_ats_task(writer, "{CLEANED_RESUME}", job_title, job_description),
-            refine_bullets_task(refiner, "{REWRITTEN_RESUME}"),
-            evaluate_ats_task(evaluator, "{FINAL_RESUME}", job_title, job_description),
-        ],
-    }
-
-
 def run_pipeline(raw_resume_text: str, job_title: str, job_description: str):
     parser = build_parser_agent()
     writer = build_ats_writer_agent()
