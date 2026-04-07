@@ -5,12 +5,13 @@ from backend.app.services.analyzer import analyze_resume
 
 def test_analyze_resume_repairs_rewrite_before_fallback():
     with patch("backend.app.services.analyzer.detect_and_extract", return_value=("txt", "JANE DOE\nEXPERIENCE\n- Built Python APIs.")), \
-         patch("crew_app.crew.run_pipeline", return_value=(
-             "JANE DOE\nEXPERIENCE\n- Built Python APIs.",
-             "JANE DOE\nEXPERIENCE\n- Built Python APIs with AWS.",
-             "JANE DOE\nEXPERIENCE\n- Built Python APIs with AWS.",
-             '{"overall_score": 75, "breakdown": {"keyword_match": 4}}',
-         )), \
+         patch("crew_app.crew.run_pipeline_with_diagnostics", return_value={
+             "cleaned": "JANE DOE\nEXPERIENCE\n- Built Python APIs.",
+             "rewritten": "JANE DOE\nEXPERIENCE\n- Built Python APIs with AWS.",
+             "final_resume": "JANE DOE\nEXPERIENCE\n- Built Python APIs with AWS.",
+             "evaluation": '{"overall_score": 75, "breakdown": {"keyword_match": 4}}',
+             "diagnostics": {"stages": [{"stage": "rewrite", "succeeded": True, "used_fallback": False}]},
+         }), \
          patch("crew_app.crew.repair_rewrite", return_value="JANE DOE\nEXPERIENCE\n- Built Python APIs."), \
          patch("crew_app.crew.repair_final_resume", return_value="JANE DOE\nEXPERIENCE\n- Built Python APIs."):
         result = analyze_resume(
@@ -26,18 +27,20 @@ def test_analyze_resume_repairs_rewrite_before_fallback():
     assert result["validation"]["rewrite"]["used_fallback"] is False
     assert result["telemetry"]["grounding"]["rewrite"]["repair_succeeded"] is True
     assert result["telemetry"]["evaluation"]["source"] == "model_json"
+    assert result["telemetry"]["pipeline"]["stages"][0]["stage"] == "rewrite"
 
 
 def test_analyze_resume_falls_back_after_failed_repair():
     cleaned = "JANE DOE\nEXPERIENCE\n- Built Python APIs."
 
     with patch("backend.app.services.analyzer.detect_and_extract", return_value=("txt", cleaned)), \
-         patch("crew_app.crew.run_pipeline", return_value=(
-             cleaned,
-             "JANE DOE\nEXPERIENCE\n- Built Python APIs with AWS.",
-             "JANE DOE\nEXPERIENCE\n- Built Python APIs with Kubernetes.",
-             '{"overall_score": 75, "breakdown": {"keyword_match": 4}}',
-         )), \
+         patch("crew_app.crew.run_pipeline_with_diagnostics", return_value={
+             "cleaned": cleaned,
+             "rewritten": "JANE DOE\nEXPERIENCE\n- Built Python APIs with AWS.",
+             "final_resume": "JANE DOE\nEXPERIENCE\n- Built Python APIs with Kubernetes.",
+             "evaluation": '{"overall_score": 75, "breakdown": {"keyword_match": 4}}',
+             "diagnostics": {"stages": [{"stage": "rewrite", "succeeded": False, "used_fallback": True}]},
+         }), \
          patch("crew_app.crew.repair_rewrite", return_value="JANE DOE\nEXPERIENCE\n- Built Python APIs with AWS."), \
          patch("crew_app.crew.repair_final_resume", return_value="JANE DOE\nEXPERIENCE\n- Built Python APIs with Kubernetes."):
         result = analyze_resume(
