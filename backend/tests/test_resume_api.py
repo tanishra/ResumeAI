@@ -54,6 +54,7 @@ def test_analyze_returns_structured_results():
                 "file_type": "txt",
                 "timings_ms": {"total": 12.5},
                 "grounding": {},
+                "pipeline": {"stages": [{"stage": "parse", "succeeded": True, "used_fallback": False}]},
                 "evaluation": {"source": "model_json"},
             },
             "docx_bytes": b"docx",
@@ -70,6 +71,7 @@ def test_analyze_returns_structured_results():
     assert payload["success"] is True
     assert payload["results"]["evaluation"]["overall_score"] == 88
     assert payload["results"]["validation"]["rewrite"]["passed"] is True
+    assert payload["results"]["telemetry"]["pipeline"]["stages"][0]["stage"] == "parse"
     assert payload["results"]["telemetry"]["evaluation"]["source"] == "model_json"
 
 
