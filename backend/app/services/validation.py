@@ -8,7 +8,25 @@ COMMON_TOOLS = {
     "node.js", "nodejs", "fastapi", "django", "flask", "sql", "mysql",
     "postgresql", "mongodb", "redis", "airflow", "spark", "pandas", "numpy",
     "scikit-learn", "tensorflow", "pytorch", "tableau", "power bi", "snowflake",
-    "git", "github", "gitlab", "linux", "jenkins", "ci/cd",
+    "git", "github", "gitlab", "linux", "jenkins", "ci/cd", "c++", "c#",
+    "go", "golang", "graphql", "rest", "kafka", "postgres", "openai",
+    "langchain", "crewai", "llm", "ai", "machine learning",
+}
+
+ROLE_KEYWORDS = {
+    "engineer", "developer", "scientist", "analyst", "manager", "architect",
+    "consultant", "specialist", "administrator", "admin", "lead", "director",
+    "designer", "researcher",
+}
+
+SENIORITY_TERMS = {
+    "senior", "junior", "lead", "principal", "staff", "head", "intern",
+    "associate", "founding",
+}
+
+SECTION_HEADERS = {
+    "summary", "professional summary", "skills", "technical skills", "experience",
+    "work experience", "education", "projects", "certifications", "achievements",
 }
 
 DATE_PATTERNS = (
@@ -47,6 +65,7 @@ def validate_resume_grounding(source_text: str, candidate_text: str) -> dict[str
     unsupported_credentials = _find_unsupported_matches(source_normalized, candidate_normalized, CREDENTIAL_PATTERNS)
     unsupported_organizations = _find_unsupported_matches(source_normalized, candidate_normalized, ORG_PATTERNS)
     unsupported_tools = sorted(_extract_tools(candidate_normalized) - _extract_tools(source_normalized))
+    unsupported_roles = sorted(_extract_role_like_lines(candidate_normalized) - _extract_role_like_lines(source_normalized))
 
     if unsupported_dates:
         issues.append({"type": "dates", "items": unsupported_dates[:5]})
@@ -58,6 +77,8 @@ def validate_resume_grounding(source_text: str, candidate_text: str) -> dict[str
         issues.append({"type": "organizations", "items": unsupported_organizations[:5]})
     if unsupported_tools:
         issues.append({"type": "tools", "items": unsupported_tools[:8]})
+    if unsupported_roles:
+        issues.append({"type": "roles", "items": unsupported_roles[:5]})
 
     return {
         "passed": len(issues) == 0,
@@ -91,7 +112,13 @@ def enforce_resume_grounding(
 
 
 def _normalize_text(text: str) -> str:
-    return text.replace("\u2022", "-").strip()
+    return (
+        text.replace("\u2022", "-")
+        .replace("\u2013", "-")
+        .replace("\u2014", "-")
+        .replace("\r\n", "\n")
+        .strip()
+    )
 
 
 def _find_unsupported_matches(source_text: str, candidate_text: str, patterns: tuple[str, ...]) -> list[str]:
@@ -112,6 +139,42 @@ def _extract_tools(text: str) -> set[str]:
         if re.search(rf"(?<!\w){re.escape(tool)}(?!\w)", lowered):
             found.add(tool)
     return found
+
+
+def _extract_role_like_lines(text: str) -> set[str]:
+    role_lines: set[str] = set()
+    for line in text.splitlines():
+        normalized_line = _normalize_match(line)
+        if not normalized_line or normalized_line in SECTION_HEADERS:
+            continue
+        if normalized_line.startswith("- "):
+            continue
+        if len(normalized_line) > 80:
+            continue
+
+        role_tokens = re.findall(r"[a-z]+", normalized_line)
+        if not role_tokens:
+            continue
+
+        if not any(token in ROLE_KEYWORDS for token in role_tokens):
+            continue
+
+        if len(role_tokens) > 8:
+            continue
+
+        if any(token in SENIORITY_TERMS for token in role_tokens) or _looks_like_role_phrase(role_tokens):
+            role_lines.add(normalized_line)
+
+    return role_lines
+
+
+def _looks_like_role_phrase(tokens: list[str]) -> bool:
+    role_positions = [index for index, token in enumerate(tokens) if token in ROLE_KEYWORDS]
+    if not role_positions:
+        return False
+
+    # Short noun phrases like "python developer" or "data engineer" are likely role titles.
+    return len(tokens) <= 4 and role_positions[-1] == len(tokens) - 1
 
 
 def _normalize_match(value: str) -> str:
