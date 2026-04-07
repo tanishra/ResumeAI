@@ -1,4 +1,5 @@
 import re
+from dataclasses import asdict, dataclass
 
 from .agents import (
     ResumeAgent,
@@ -69,42 +70,111 @@ def _invoke_task(agent: ResumeAgent, task: ResumeTask) -> str:
     return agent.llm.call(_build_messages(agent, task))
 
 
+@dataclass(frozen=True)
+class StageDiagnostics:
+    stage: str
+    succeeded: bool
+    used_fallback: bool
+    fallback_reason: str | None = None
+    error_type: str | None = None
+    error_message: str | None = None
+
+
 def _run_stage(
+    stage: str,
     agent: ResumeAgent,
     task: ResumeTask,
     fallback_text: str,
     *,
     sanitize_output=_sanitize_text_output,
-) -> str:
+) -> tuple[str, StageDiagnostics]:
     try:
         result = _invoke_task(agent, task)
         cleaned_result = sanitize_output(result)
-        return cleaned_result or fallback_text
-    except Exception:
-        return fallback_text
+        if cleaned_result:
+            return cleaned_result, StageDiagnostics(
+                stage=stage,
+                succeeded=True,
+                used_fallback=False,
+            )
+
+        return fallback_text, StageDiagnostics(
+            stage=stage,
+            succeeded=False,
+            used_fallback=True,
+            fallback_reason="empty_output",
+        )
+    except Exception as exc:
+        return fallback_text, StageDiagnostics(
+            stage=stage,
+            succeeded=False,
+            used_fallback=True,
+            fallback_reason="exception",
+            error_type=exc.__class__.__name__,
+            error_message=str(exc).strip() or None,
+        )
 
 
 def run_pipeline(raw_resume_text: str, job_title: str, job_description: str):
+    pipeline_results = run_pipeline_with_diagnostics(
+        raw_resume_text=raw_resume_text,
+        job_title=job_title,
+        job_description=job_description,
+    )
+    return (
+        pipeline_results["cleaned"],
+        pipeline_results["rewritten"],
+        pipeline_results["final_resume"],
+        pipeline_results["evaluation"],
+    )
+
+
+def run_pipeline_with_diagnostics(raw_resume_text: str, job_title: str, job_description: str):
     parser = build_parser_agent()
     writer = build_ats_writer_agent()
     refiner = build_refiner_agent()
     evaluator = build_evaluator_agent()
 
-    cleaned = _run_stage(parser, parse_resume_task(parser, raw_resume_text), raw_resume_text)
-    rewritten = _run_stage(
+    cleaned, parse_diagnostics = _run_stage(
+        "parse",
+        parser,
+        parse_resume_task(parser, raw_resume_text),
+        raw_resume_text,
+    )
+    rewritten, rewrite_diagnostics = _run_stage(
+        "rewrite",
         writer,
         rewrite_for_ats_task(writer, cleaned, job_title, job_description),
         cleaned,
     )
-    final_resume = _run_stage(refiner, refine_bullets_task(refiner, rewritten), rewritten)
-    evaluation = _run_stage(
+    final_resume, refine_diagnostics = _run_stage(
+        "refine",
+        refiner,
+        refine_bullets_task(refiner, rewritten),
+        rewritten,
+    )
+    evaluation, evaluation_diagnostics = _run_stage(
+        "evaluation",
         evaluator,
         evaluate_ats_task(evaluator, final_resume, job_title, job_description),
         "",
         sanitize_output=_sanitize_evaluation_output,
     )
 
-    return cleaned, rewritten, final_resume, evaluation
+    return {
+        "cleaned": cleaned,
+        "rewritten": rewritten,
+        "final_resume": final_resume,
+        "evaluation": evaluation,
+        "diagnostics": {
+            "stages": [
+                asdict(parse_diagnostics),
+                asdict(rewrite_diagnostics),
+                asdict(refine_diagnostics),
+                asdict(evaluation_diagnostics),
+            ]
+        },
+    }
 
 
 def repair_rewrite(
@@ -115,7 +185,8 @@ def repair_rewrite(
     job_description: str,
 ) -> str:
     writer = build_ats_writer_agent()
-    return _run_stage(
+    repaired_text, _ = _run_stage(
+        "rewrite_repair",
         writer,
         rewrite_for_ats_task(
             writer,
@@ -127,6 +198,7 @@ def repair_rewrite(
         ),
         previous_candidate,
     )
+    return repaired_text
 
 
 def repair_final_resume(
@@ -136,7 +208,8 @@ def repair_final_resume(
     validation_issues: list[dict[str, object]],
 ) -> str:
     refiner = build_refiner_agent()
-    return _run_stage(
+    repaired_text, _ = _run_stage(
+        "final_resume_repair",
         refiner,
         refine_bullets_task(
             refiner,
@@ -147,3 +220,4 @@ def repair_final_resume(
         ),
         previous_candidate,
     )
+    return repaired_text
