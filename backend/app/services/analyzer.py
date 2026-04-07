@@ -87,7 +87,11 @@ def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: 
     """
     Runs the pipeline on an uploaded resume file.
     """
-    from crew_app.crew import repair_final_resume, repair_rewrite, run_pipeline
+    from crew_app.crew import (
+        repair_final_resume,
+        repair_rewrite,
+        run_pipeline_with_diagnostics,
+    )
 
     started_at = perf_counter()
     extraction_started_at = perf_counter()
@@ -102,11 +106,15 @@ def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: 
 
     pipeline_started_at = perf_counter()
     try:
-        cleaned, rewritten, final_resume, evaluation = run_pipeline(
+        pipeline_results = run_pipeline_with_diagnostics(
             raw_resume_text=raw_text,
             job_title=job_title.strip(),
             job_description=job_desc.strip()
         )
+        cleaned = pipeline_results["cleaned"]
+        rewritten = pipeline_results["rewritten"]
+        final_resume = pipeline_results["final_resume"]
+        evaluation = pipeline_results["evaluation"]
     except Exception as exc:
         raise _classify_pipeline_exception(exc) from exc
     pipeline_ms = round((perf_counter() - pipeline_started_at) * 1000, 2)
@@ -182,6 +190,7 @@ def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: 
                     "used_fallback": final_validation["used_fallback"],
                 },
             },
+            "pipeline": pipeline_results["diagnostics"],
             "evaluation": evaluation_metadata,
         },
         "docx_bytes": docx_bytes,
