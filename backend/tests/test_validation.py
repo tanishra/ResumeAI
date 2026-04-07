@@ -26,6 +26,28 @@ def test_validate_resume_grounding_flags_new_metrics_and_tools():
     assert "dates" in issue_types
 
 
+def test_validate_resume_grounding_flags_unsupported_role_titles():
+    source_text = """
+    JANE DOE
+    SOFTWARE ENGINEER
+    EXPERIENCE
+    - Built backend APIs with Python.
+    """
+    candidate_text = """
+    JANE DOE
+    SENIOR SOFTWARE ENGINEER
+    EXPERIENCE
+    - Built backend APIs with Python and Kafka.
+    """
+
+    validation = validate_resume_grounding(source_text, candidate_text)
+
+    assert validation["passed"] is False
+    issue_types = {issue["type"] for issue in validation["issues"]}
+    assert "roles" in issue_types
+    assert "tools" in issue_types
+
+
 def test_enforce_resume_grounding_falls_back_when_candidate_adds_claims():
     source_text = """
     JANE DOE
