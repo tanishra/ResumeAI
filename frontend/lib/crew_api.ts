@@ -31,6 +31,16 @@ export interface ValidationResult {
 export interface AnalysisTelemetry {
   file_type?: string;
   timings_ms?: Record<string, number>;
+  pipeline?: {
+    stages?: Array<{
+      stage: string;
+      succeeded: boolean;
+      used_fallback: boolean;
+      fallback_reason?: string | null;
+      error_type?: string | null;
+      error_message?: string | null;
+    }>;
+  };
   grounding?: Record<
     string,
     {
