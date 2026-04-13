@@ -25,7 +25,7 @@ class LangChainOpenAILLM:
             max_retries=2,
         )
 
-    def call(
+    async def call(
         self,
         messages: Union[str, List[Dict[str, Any]]],
         tools: Optional[List[dict]] = None,
@@ -34,7 +34,7 @@ class LangChainOpenAILLM:
     ) -> str:
         del tools, callbacks, available_functions
         normalized_messages = self._normalize_messages(messages)
-        response = self.client.invoke(normalized_messages)
+        response = await self.client.ainvoke(normalized_messages)
         content = self._extract_content(response.content)
         return self._apply_stop_words(content)
 
