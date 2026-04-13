@@ -1,6 +1,5 @@
 'use client';
 
-import { Document, Packer, Paragraph, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
 import {
   AlertTriangle,
@@ -17,6 +16,7 @@ import {
   type AnalysisResults,
   type EvaluationResult,
   type ValidationStageResult,
+  CrewAPI,
 } from '@/lib/crew_api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,43 +81,13 @@ function downloadTextFile(content: string, fileName: string) {
 }
 
 async function downloadDocx(content: string) {
-  const paragraphs = content.split('\n').map((line, index) => {
-    const trimmed = line.trim();
-
-    if (!trimmed) {
-      return new Paragraph({ text: '' });
-    }
-
-    if (index === 0) {
-      return new Paragraph({
-        text: trimmed,
-        heading: HeadingLevel.TITLE,
-      });
-    }
-
-    if (/^[A-Z][A-Z\s&]+$/.test(trimmed) && !trimmed.includes('|')) {
-      return new Paragraph({
-        text: trimmed,
-        heading: HeadingLevel.HEADING_2,
-      });
-    }
-
-    if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
-      return new Paragraph({
-        text: trimmed.replace(/^[-•]\s*/, ''),
-        bullet: { level: 0 },
-      });
-    }
-
-    return new Paragraph({ text: trimmed });
-  });
-
-  const document = new Document({
-    sections: [{ children: paragraphs }],
-  });
-
-  const blob = await Packer.toBlob(document);
-  saveAs(blob, 'optimized_resume.docx');
+  try {
+    const blob = await CrewAPI.downloadDocx(content);
+    saveAs(blob, 'optimized_resume.docx');
+  } catch (error) {
+    console.error('Download failed:', error);
+    alert('Failed to download professional DOCX. Falling back to basic preview.');
+  }
 }
 
 function ResumePreview({ text }: { text: string }) {

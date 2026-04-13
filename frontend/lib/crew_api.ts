@@ -138,4 +138,21 @@ export class CrewAPI {
 
     return results;
   }
+
+  static async downloadDocx(finalResume: string): Promise<Blob> {
+    const formData = new FormData();
+    formData.append('final_resume', finalResume);
+
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const response = await fetch(`${backendUrl}/resume/download-docx`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate DOCX document.');
+    }
+
+    return await response.blob();
+  }
 }
