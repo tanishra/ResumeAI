@@ -2,8 +2,10 @@ fastapi
 langchain-openai
 openai
 pypdf
+pdfplumber
 python-docx
 python-dotenv
 python-multipart
 pytest
 uvicorn[standard]
+sse-starlette

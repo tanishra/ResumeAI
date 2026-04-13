@@ -1,5 +1,8 @@
+import json
+import asyncio
 from fastapi import APIRouter, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
+from sse_starlette.sse import EventSourceResponse
 from backend.app.services.analyzer import analyze_resume
 from backend.app.services.errors import ResumeAnalyzerError
 from crew_app.utils import txt_to_docx_bytes
@@ -32,37 +35,37 @@ async def analyze(
     job_title: str = Form(...),
     job_description: str = Form(...)
 ):
-    try:
-        contents = await file.read()
-        _validate_request(file, contents, job_title, job_description)
-        results = analyze_resume(file.filename, contents, job_title, job_description)
-        return JSONResponse(
-            content={
-                "success": True,
-                "results": {
-                    "cleaned": results["cleaned"],
-                    "rewritten": results["rewritten"],
-                    "final_resume": results["final_resume"],
-                    "evaluation": results["evaluation"],
-                    "validation": results["validation"],
-                    "telemetry": results["telemetry"],
-                }
-            }
-        )
-    except ResumeAnalyzerError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.detail,
-            headers={"X-Error-Code": exc.error_code},
-        )
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail="The resume analysis request failed unexpectedly.",
-            headers={"X-Error-Code": "unexpected_resume_error"},
-        )
+    contents = await file.read()
+    _validate_request(file, contents, job_title, job_description)
+    
+    async def event_generator():
+        queue = asyncio.Queue()
+
+        async def on_progress(message: str):
+            await queue.put({"type": "progress", "message": message})
+
+        async def run_analysis():
+            try:
+                results = await analyze_resume(file.filename, contents, job_title, job_description, on_progress=on_progress)
+                await queue.put({"type": "results", "data": results})
+            except ResumeAnalyzerError as exc:
+                await queue.put({"type": "error", "detail": exc.detail, "code": exc.error_code})
+            except Exception as exc:
+                await queue.put({"type": "error", "detail": str(exc), "code": "unexpected_error"})
+            finally:
+                await queue.put(None)
+
+        task = asyncio.create_task(run_analysis())
+
+        while True:
+            item = await queue.get()
+            if item is None:
+                break
+            yield {"data": json.dumps(item)}
+        
+        await task
+
+    return EventSourceResponse(event_generator())
 
 @router.post("/download-docx")
 async def download_docx(

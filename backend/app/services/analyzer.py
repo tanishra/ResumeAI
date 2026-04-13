@@ -1,4 +1,5 @@
 from time import perf_counter
+from typing import Callable, Awaitable, Optional
 
 from crew_app.file_tools.file_loader import detect_and_extract
 from crew_app.utils import txt_to_docx_bytes
@@ -12,7 +13,7 @@ from backend.app.services.errors import (
 from backend.app.services.validation import validate_resume_grounding
 
 
-def _apply_grounding_with_repair(
+async def _apply_grounding_with_repair(
     *,
     source_text: str,
     candidate_text: str,
@@ -32,7 +33,7 @@ def _apply_grounding_with_repair(
         }
 
     try:
-        repaired_text = repair_fn(initial_validation["issues"])
+        repaired_text = await repair_fn(initial_validation["issues"])
     except Exception:
         repaired_text = candidate_text
 
@@ -83,7 +84,13 @@ def _classify_pipeline_exception(exc: Exception) -> Exception:
         f"The resume pipeline failed before completion: {message or exc_name}."
     )
 
-def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: str):
+async def analyze_resume(
+    file_name: str, 
+    file_bytes: bytes, 
+    job_title: str, 
+    job_desc: str,
+    on_progress: Optional[Callable[[str], Awaitable[None]]] = None
+):
     """
     Runs the pipeline on an uploaded resume file.
     """
@@ -95,6 +102,8 @@ def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: 
 
     started_at = perf_counter()
     extraction_started_at = perf_counter()
+    if on_progress:
+        await on_progress("Extracting text from resume...")
     try:
         ext, raw_text = detect_and_extract(file_name, file_bytes)
     except Exception as exc:
@@ -106,10 +115,11 @@ def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: 
 
     pipeline_started_at = perf_counter()
     try:
-        pipeline_results = run_pipeline_with_diagnostics(
+        pipeline_results = await run_pipeline_with_diagnostics(
             raw_resume_text=raw_text,
             job_title=job_title.strip(),
-            job_description=job_desc.strip()
+            job_description=job_desc.strip(),
+            on_progress=on_progress
         )
         cleaned = pipeline_results["cleaned"]
         rewritten = pipeline_results["rewritten"]
@@ -120,7 +130,10 @@ def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: 
     pipeline_ms = round((perf_counter() - pipeline_started_at) * 1000, 2)
 
     grounding_started_at = perf_counter()
-    validated_rewritten, rewrite_validation = _apply_grounding_with_repair(
+    if on_progress:
+        await on_progress("Validating resume grounding and repairing hallucinations...")
+    
+    validated_rewritten, rewrite_validation = await _apply_grounding_with_repair(
         source_text=cleaned,
         candidate_text=rewritten,
         fallback_text=cleaned,
@@ -133,7 +146,7 @@ def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: 
             job_desc.strip(),
         ),
     )
-    validated_final_resume, final_validation = _apply_grounding_with_repair(
+    validated_final_resume, final_validation = await _apply_grounding_with_repair(
         source_text=cleaned,
         candidate_text=final_resume,
         fallback_text=validated_rewritten,
@@ -148,6 +161,8 @@ def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: 
     grounding_ms = round((perf_counter() - grounding_started_at) * 1000, 2)
 
     evaluation_started_at = perf_counter()
+    if on_progress:
+        await on_progress("Finalizing evaluation results...")
     parsed_eval, evaluation_metadata = normalize_evaluation_payload(
         raw_output=evaluation,
         resume_text=validated_final_resume,
@@ -158,6 +173,9 @@ def analyze_resume(file_name: str, file_bytes: bytes, job_title: str, job_desc: 
     docx_started_at = perf_counter()
     docx_bytes = txt_to_docx_bytes(validated_final_resume)
     docx_generation_ms = round((perf_counter() - docx_started_at) * 1000, 2)
+
+    if on_progress:
+        await on_progress("Analysis complete!")
 
     return {
         "cleaned": cleaned,
