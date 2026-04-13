@@ -77,7 +77,8 @@ export class CrewAPI {
   static async analyzeResume(
     file: File,
     jobTitle: string,
-    jobDescription: string
+    jobDescription: string,
+    onProgress?: (message: string) => void
   ): Promise<AnalysisResults> {
     const formData = new FormData();
     formData.append('file', file);
@@ -89,12 +90,52 @@ export class CrewAPI {
       body: formData,
     });
 
-    const data = (await response.json()) as AnalysisResponse;
-
-    if (!response.ok || !data.success || !data.results) {
-      throw new Error(data.detail || 'Resume analysis failed.');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Analysis failed with status ${response.status}`);
     }
 
-    return data.results;
+    if (!response.body) {
+      throw new Error('No response body received from server.');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let results: AnalysisResults | null = null;
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim() || !line.startsWith('data: ')) continue;
+        
+        const dataStr = line.replace('data: ', '').trim();
+        try {
+          const payload = JSON.parse(dataStr);
+          
+          if (payload.type === 'progress' && onProgress) {
+            onProgress(payload.message);
+          } else if (payload.type === 'results') {
+            results = payload.data;
+          } else if (payload.type === 'error') {
+            throw new Error(payload.detail || 'Analysis failed unexpectedly.');
+          }
+        } catch (e) {
+          console.error('Error parsing SSE message:', e);
+        }
+      }
+    }
+
+    if (!results) {
+      throw new Error('Analysis completed but no results were received.');
+    }
+
+    return results;
   }
 }

@@ -16,21 +16,19 @@ export async function forwardAnalyzeRequest(
     return Response.json({ detail: 'Missing file or job details.' }, { status: 400 });
   }
 
-  backendFormData.append('file', file);
-  backendFormData.append('job_title', jobTitle);
-  backendFormData.append('job_description', jobDescription);
+  const payload = new FormData();
+  payload.append('file', file);
+  payload.append('job_title', jobTitle);
+  payload.append('job_description', jobDescription);
 
   try {
-    const response = await fetch(`${backendUrl}/resume/analyze`, {
+    return await fetch(`${backendUrl}/resume/analyze`, {
       method: 'POST',
-      body: backendFormData,
+      body: payload,
     });
-
-    const data = await response.json();
-    return Response.json(data, { status: response.status });
   } catch {
     return Response.json(
-      { detail: 'Failed to analyze resume.' },
+      { detail: 'Failed to connect to backend.' },
       { status: 500 }
     );
   }

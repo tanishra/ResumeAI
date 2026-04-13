@@ -23,12 +23,6 @@ interface ResumeAnalyzerProps {
   setIsAnalyzing: (analyzing: boolean) => void;
 }
 
-const ANALYSIS_STEPS = [
-  'Uploading resume and extracting text',
-  'Running the ATS rewrite pipeline',
-  'Scoring alignment and preparing results',
-];
-
 export default function ResumeAnalyzer({
   onAnalysisComplete,
   isAnalyzing,
@@ -38,6 +32,7 @@ export default function ResumeAnalyzer({
   const [jobDescription, setJobDescription] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState<string>('');
 
   const handleFileUpload = async (file: File) => {
     setError(null);
@@ -52,12 +47,14 @@ export default function ResumeAnalyzer({
 
     setError(null);
     setIsAnalyzing(true);
+    setCurrentStep('Initializing analysis...');
 
     try {
       const results = await CrewAPI.analyzeResume(
         uploadedFile,
         jobTitle.trim(),
-        jobDescription.trim()
+        jobDescription.trim(),
+        (message) => setCurrentStep(message)
       );
 
       window.setTimeout(() => {
@@ -153,7 +150,7 @@ export default function ResumeAnalyzer({
                   {uploadedFile.name}
                 </p>
                 <p className="text-sm text-green-600">
-                  {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                  {(uploadedFile.size / 1024 / 1024).toFixed(2) + ' MB'}
                 </p>
               </div>
             </motion.div>
@@ -216,15 +213,15 @@ export default function ResumeAnalyzer({
             <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-700">
               <div className="mb-3 flex items-center gap-2 font-medium">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Analyzing your resume</span>
+                <span>{currentStep || 'Analyzing your resume...'}</span>
               </div>
-              <div className="space-y-2 text-xs text-blue-800">
-                {ANALYSIS_STEPS.map((step) => (
-                  <div key={step} className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                    <span>{step}</span>
-                  </div>
-                ))}
+              <div className="h-2 w-full overflow-hidden rounded-full bg-blue-100">
+                <motion.div
+                  className="h-full bg-blue-500"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 30, ease: 'linear' }}
+                />
               </div>
             </div>
           ) : null}
