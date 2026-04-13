@@ -54,8 +54,8 @@ def _sanitize_evaluation_output(value: object) -> str:
     return text
 
 
-async def _invoke_task(agent: ResumeAgent, task: ResumeTask) -> str:
-    return await agent.llm.call(_build_messages(agent, task))
+async def _invoke_task(agent: ResumeAgent, task: ResumeTask, json_mode: bool = False) -> str:
+    return await agent.llm.call(_build_messages(agent, task), json_mode=json_mode)
 
 
 def _build_messages(agent: ResumeAgent, task: ResumeTask) -> list[dict[str, str]]:
@@ -89,11 +89,12 @@ async def _run_stage(
     *,
     sanitize_output=_sanitize_text_output,
     on_progress: Optional[Callable[[str], Awaitable[None]]] = None,
+    json_mode: bool = False,
 ) -> tuple[str, StageDiagnostics]:
     if on_progress:
         await on_progress(f"Starting {stage} stage...")
     try:
-        result = await _invoke_task(agent, task)
+        result = await _invoke_task(agent, task, json_mode=json_mode)
         cleaned_result = sanitize_output(result)
         if cleaned_result:
             if on_progress:
@@ -178,6 +179,7 @@ async def run_pipeline_with_diagnostics(
         "",
         sanitize_output=_sanitize_evaluation_output,
         on_progress=on_progress,
+        json_mode=True,
     )
 
     return {

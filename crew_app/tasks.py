@@ -117,8 +117,8 @@ def evaluate_ats_task(agent, final_resume_text, job_title, job_description):
             f"Score this resume for {job_title}:\n\n"
             f"JOB: {job_description}\n\n"
             f"RESUME: {final_resume_text}\n\n"
-            "Return JSON only. No prose before or after the JSON object.\n"
-            "Use this exact schema:\n"
+            "Return a JSON object only. Do not include markdown code fences or any other text.\n"
+            "The output must be valid JSON matching this schema:\n"
             "{\n"
             '  "overall_score": 0,\n'
             '  "breakdown": {\n'
@@ -134,8 +134,7 @@ def evaluate_ats_task(agent, final_resume_text, job_title, job_description):
             '  "summary": "",\n'
             '  "recommendation": ""\n'
             "}\n"
-            "Scores in breakdown must be integers from 1 to 5. overall_score must be 0 to 100. "
-            "Base the evaluation only on evidence in the resume and job description."
+            "Scores in breakdown must be integers from 1 to 5. overall_score must be 0 to 100."
         ),
-        expected_output="JSON evaluation with scores and recommendations.",
+        expected_output="JSON evaluation object.",
     )

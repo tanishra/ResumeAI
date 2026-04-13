@@ -31,10 +31,17 @@ class LangChainOpenAILLM:
         tools: Optional[List[dict]] = None,
         callbacks: Optional[List[Any]] = None,
         available_functions: Optional[Dict[str, Any]] = None,
+        json_mode: bool = False,
     ) -> str:
         del tools, callbacks, available_functions
         normalized_messages = self._normalize_messages(messages)
-        response = await self.client.ainvoke(normalized_messages)
+        
+        # Enable JSON mode if requested
+        invocation_kwargs = {}
+        if json_mode:
+            invocation_kwargs["model_kwargs"] = {"response_format": {"type": "json_object"}}
+            
+        response = await self.client.ainvoke(normalized_messages, **invocation_kwargs)
         content = self._extract_content(response.content)
         return self._apply_stop_words(content)
 
