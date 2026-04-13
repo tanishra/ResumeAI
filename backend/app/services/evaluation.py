@@ -35,20 +35,25 @@ def extract_json_object(text: str) -> dict[str, Any] | None:
         return None
 
     stripped = text.strip()
-    candidates = [stripped]
+    
+    # Try direct parse first (Ideal for JSON mode)
+    try:
+        parsed = json.loads(stripped)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
 
+    # Fallback to searching for {} boundaries
     start = stripped.find("{")
     end = stripped.rfind("}")
     if start != -1 and end != -1 and end > start:
-        candidates.append(stripped[start : end + 1])
-
-    for candidate in candidates:
         try:
-            parsed = json.loads(candidate)
+            parsed = json.loads(stripped[start : end + 1])
+            if isinstance(parsed, dict):
+                return parsed
         except json.JSONDecodeError:
-            continue
-        if isinstance(parsed, dict):
-            return parsed
+            pass
 
     return None
 
@@ -132,44 +137,51 @@ def normalize_evaluation_payload(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     fallback = build_rule_based_evaluation(resume_text, job_description)
     parsed = extract_json_object(raw_output)
+    
     if not parsed:
-        fallback["raw_output"] = raw_output
         return fallback, {
             "source": "rule_based_fallback",
             "parsed_json": False,
-            "raw_output_included": bool(raw_output.strip()),
+            "raw_output_length": len(raw_output),
         }
 
+    # Normalize the model output with fallbacks for missing fields
     breakdown = parsed.get("breakdown")
     if not isinstance(breakdown, dict):
         breakdown = {}
 
     normalized_breakdown = {}
     for key, default_value in fallback["breakdown"].items():
-        normalized_breakdown[key] = _coerce_breakdown_score(breakdown.get(key), default_value)
+        val = breakdown.get(key)
+        # Handle variants like "keywordMatch" vs "keyword_match"
+        if val is None:
+            camel_key = "".join(word.capitalize() if i > 0 else word for i, word in enumerate(key.split("_")))
+            val = breakdown.get(camel_key)
+        normalized_breakdown[key] = _coerce_breakdown_score(val, default_value)
 
     overall_score = parsed.get("overall_score")
-    if not isinstance(overall_score, int):
+    if overall_score is None:
+        overall_score = parsed.get("overallScore")
+        
+    if not isinstance(overall_score, (int, float)):
         overall_score = round((sum(normalized_breakdown.values()) / 25) * 100)
-    overall_score = max(0, min(100, overall_score))
+    
+    overall_score = max(0, min(100, int(overall_score)))
 
     normalized = {
         "overall_score": overall_score,
         "breakdown": normalized_breakdown,
-        "missing_keywords": _coerce_string_list(parsed.get("missing_keywords")) or fallback["missing_keywords"],
-        "quick_wins": _coerce_string_list(parsed.get("quick_wins")) or fallback["quick_wins"],
+        "missing_keywords": _coerce_string_list(parsed.get("missing_keywords") or parsed.get("missingKeywords")) or fallback["missing_keywords"],
+        "quick_wins": _coerce_string_list(parsed.get("quick_wins") or parsed.get("quickWins")) or fallback["quick_wins"],
         "strengths": _coerce_string_list(parsed.get("strengths")) or fallback["strengths"],
         "summary": _coerce_string(parsed.get("summary")) or fallback["summary"],
         "recommendation": _coerce_string(parsed.get("recommendation")) or fallback["recommendation"],
     }
 
-    if raw_output.strip() and not extract_json_object(raw_output.strip()) == parsed:
-        normalized["raw_output"] = raw_output
-
     return normalized, {
         "source": "model_json",
         "parsed_json": True,
-        "raw_output_included": "raw_output" in normalized,
+        "json_mode_active": True,
     }
 
 
