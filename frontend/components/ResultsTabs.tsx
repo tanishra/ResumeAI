@@ -149,9 +149,14 @@ function EvaluationDashboard({ evaluation, results }: { evaluation: EvaluationRe
 }
 
 export default function ResultsTabs({ results }: ResultsTabsProps) {
-  const download = async () => {
+  const downloadDocx = async () => {
     const blob = await CrewAPI.downloadDocx(results.final_resume);
     saveAs(blob, 'optimized_resume.docx');
+  };
+
+  const downloadPdf = async () => {
+    const blob = await CrewAPI.downloadPdf(results.final_resume);
+    saveAs(blob, 'optimized_resume.pdf');
   };
 
   return (
@@ -164,13 +169,22 @@ export default function ResultsTabs({ results }: ResultsTabsProps) {
             <TabsTrigger value="diff" className="rounded-xl px-4 md:px-8 py-2 md:py-2.5 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-lg data-[state=active]:shadow-slate-200 shrink-0">Delta</TabsTrigger>
           </TabsList>
 
-          <button
-            onClick={download}
-            className="btn-premium w-full md:w-auto flex h-12 md:h-14 items-center justify-center gap-3 rounded-2xl bg-slate-900 px-6 md:px-10 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-slate-200 shrink-0"
-          >
-            <Download className="h-4 w-4" />
-            Export Document
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={downloadDocx}
+              className="btn-premium flex-1 md:flex-none flex h-12 md:h-14 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 md:px-8 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-600 shadow-sm shrink-0"
+            >
+              <Download className="h-4 w-4" />
+              Docx
+            </button>
+            <button
+              onClick={downloadPdf}
+              className="btn-premium flex-1 md:flex-none flex h-12 md:h-14 items-center justify-center gap-3 rounded-2xl bg-slate-900 px-6 md:px-10 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-slate-200 shrink-0"
+            >
+              <Download className="h-4 w-4" />
+              Export PDF
+            </button>
+          </div>
         </div>
 
         <TabsContent value="evaluation" className="mt-8 md:mt-12 focus-visible:outline-none w-full">

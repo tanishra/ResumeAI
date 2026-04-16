@@ -4,6 +4,7 @@ openai
 pypdf
 pdfplumber
 python-docx
+fpdf2
 python-dotenv
 python-multipart
 pytest

@@ -1,12 +1,12 @@
 import json
 import asyncio
 import logging
-from fastapi import APIRouter, UploadFile, Form, HTTPException
+from fastapi import APIRouter, UploadFile, Form, HTTPException, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 from backend.app.services.analyzer import analyze_resume
 from backend.app.services.errors import ResumeAnalyzerError
-from crew_app.utils import txt_to_docx_bytes
+from crew_app.utils import txt_to_docx_bytes, txt_to_pdf_bytes
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/resume", tags=["Resume"])
@@ -98,4 +98,29 @@ async def download_docx(
             status_code=500,
             detail="The resume document could not be generated.",
             headers={"X-Error-Code": "docx_generation_error"},
+        )
+
+@router.post("/download-pdf")
+async def download_pdf(
+    final_resume: str = Form(...),
+):
+    logger.info("PDF download requested")
+    try:
+        if not final_resume.strip():
+            raise HTTPException(status_code=400, detail="Final resume content is required.")
+
+        pdf_bytes = txt_to_pdf_bytes(final_resume.strip())
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=optimized_resume.pdf"}
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error generating PDF document")
+        raise HTTPException(
+            status_code=500,
+            detail="The PDF document could not be generated.",
+            headers={"X-Error-Code": "pdf_generation_error"},
         )

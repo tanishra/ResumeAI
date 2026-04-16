@@ -155,4 +155,21 @@ export class CrewAPI {
 
     return await response.blob();
   }
+
+  static async downloadPdf(finalResume: string): Promise<Blob> {
+    const formData = new FormData();
+    formData.append('final_resume', finalResume);
+
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const response = await fetch(`${backendUrl}/resume/download-pdf`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate PDF document.');
+    }
+
+    return await response.blob();
+  }
 }
