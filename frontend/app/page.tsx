@@ -55,9 +55,14 @@ function HeroSection() {
             Start Analyzing
             <ChevronRight className="h-4 w-4" />
           </button>
-          <button className="flex h-14 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-10 text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50">
-            Read Methodology
-          </button>
+          <a 
+            href="https://github.com/tanishra/ResumeAI"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-14 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-10 text-sm font-bold uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50"
+          >
+            Explore the Code
+          </a>
         </motion.div>
       </div>
     </section>
@@ -195,9 +200,14 @@ export default function Home() {
             </div>
           </div>
           <div className="flex flex-wrap justify-center gap-8 md:gap-12 font-bold text-[11px] uppercase tracking-[0.2em] text-slate-400">
-            <a href="#" className="hover:text-indigo-600 transition-colors">Documentation</a>
-            <a href="#" className="hover:text-indigo-600 transition-colors">Security</a>
-            <a href="#" className="hover:text-indigo-600 transition-colors">Privacy</a>
+            <a 
+              href="https://github.com/tanishra/ResumeAI" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-indigo-600 transition-colors"
+            >
+              Documentation
+            </a>
           </div>
         </div>
       </footer>
