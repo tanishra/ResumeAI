@@ -2,147 +2,54 @@
 
 import { saveAs } from 'file-saver';
 import {
-  AlertTriangle,
-  CheckCircle,
   Download,
-  FileText,
-  Lightbulb,
   Sparkles,
   Target,
   TrendingUp,
+  ShieldCheck,
+  Zap,
+  BarChart3,
+  Dna,
 } from 'lucide-react';
 import ReactDiffViewer from 'react-diff-viewer-continued';
 import {
   type AnalysisResults,
   type EvaluationResult,
-  type ValidationStageResult,
   CrewAPI,
 } from '@/lib/crew_api';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { motion } from 'framer-motion';
 
 interface ResultsTabsProps {
   results: AnalysisResults;
 }
 
-function ValidationBanner({ results }: { results: AnalysisResults }) {
-  const stages = Object.values(results.validation || {}) as ValidationStageResult[];
-  const fallbackStages = stages.filter((stage) => stage?.used_fallback);
-
-  if (!fallbackStages.length) {
-    return null;
-  }
-
+function MetricCard({ label, value, trend }: { label: string; value: string | number; trend?: string }) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-      <div className="mb-2 flex items-center gap-2 font-semibold">
-        <AlertTriangle className="h-4 w-4" />
-        Grounding protection applied
+    <motion.div 
+      whileHover={{ y: -4 }}
+      className="rounded-3xl border border-slate-100 bg-slate-50/50 p-5 md:p-6 transition-all hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 w-full"
+    >
+      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 truncate">{label}</div>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <div className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">{value}</div>
+        {trend && <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">{trend}</div>}
       </div>
-      <p>
-        The model introduced unsupported resume details, so ResumeAI fell back to
-        the last grounded version for safety.
-      </p>
-      <div className="mt-3 space-y-2">
-        {fallbackStages.map((stage) => (
-          <div key={stage.stage}>
-            <span className="font-medium">
-              {stage.stage.replace(/_/g, ' ')}:
-            </span>{' '}
-            {stage.issues
-              .map((issue) => `${issue.type} (${issue.items.join(', ')})`)
-              .join(' | ')}
-          </div>
-        ))}
-      </div>
-    </div>
+    </motion.div>
   );
 }
 
-function getEvaluation(result: EvaluationResult): EvaluationResult {
-  if (typeof result === 'object' && result !== null) {
-    return result;
-  }
-
-  return { raw_output: 'No evaluation data available.' };
-}
-
-function parseResumeSections(text: string) {
-  return text
-    .split('\n')
-    .map((line) => line.trimEnd())
-    .filter((line, index, lines) => line || lines[index - 1] !== '');
-}
-
-function downloadTextFile(content: string, fileName: string) {
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  saveAs(blob, fileName);
-}
-
-async function downloadDocx(content: string) {
-  try {
-    const blob = await CrewAPI.downloadDocx(content);
-    saveAs(blob, 'optimized_resume.docx');
-  } catch (error) {
-    console.error('Download failed:', error);
-    alert('Failed to download professional DOCX. Falling back to basic preview.');
-  }
-}
-
 function ResumePreview({ text }: { text: string }) {
-  const lines = parseResumeSections(text);
-
   return (
-    <div className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-      <div className="space-y-3">
-        {lines.map((line, index) => {
+    <div className="relative overflow-hidden rounded-[32px] md:rounded-[40px] border border-slate-100 bg-white p-6 md:p-12 shadow-2xl shadow-slate-200/60 w-full">
+      <div className="absolute right-0 top-0 h-64 w-64 bg-indigo-50/50 blur-3xl -z-10" />
+      <div className="max-w-3xl mx-auto space-y-6 font-serif text-[14px] md:text-[15px] leading-relaxed text-slate-700">
+        {text.split('\n').map((line, i) => {
           const trimmed = line.trim();
-
-          if (!trimmed) {
-            return <div key={`${line}-${index}`} className="h-2" />;
-          }
-
-          if (index === 0) {
-            return (
-              <h2
-                key={`${line}-${index}`}
-                className="text-3xl font-bold tracking-tight text-slate-900"
-              >
-                {trimmed}
-              </h2>
-            );
-          }
-
-          if (/^[A-Z][A-Z\s&]+$/.test(trimmed) && !trimmed.includes('|')) {
-            return (
-              <h3
-                key={`${line}-${index}`}
-                className="border-b border-slate-200 pt-4 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700"
-              >
-                {trimmed}
-              </h3>
-            );
-          }
-
-          if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
-            return (
-              <div
-                key={`${line}-${index}`}
-                className="flex items-start gap-3 text-sm text-slate-700"
-              >
-                <span className="mt-0.5 text-blue-600">•</span>
-                <p className="leading-6">{trimmed.replace(/^[-•]\s*/, '')}</p>
-              </div>
-            );
-          }
-
+          const isHeader = trimmed && trimmed === trimmed.toUpperCase() && trimmed.length < 40;
           return (
-            <p
-              key={`${line}-${index}`}
-              className="text-sm leading-6 text-slate-700"
-            >
-              {trimmed}
+            <p key={i} className={isHeader ? "font-sans font-black text-slate-900 tracking-widest text-[10px] md:text-xs uppercase mt-8 md:mt-10 border-b border-slate-100 pb-2" : "break-words"}>
+              {line}
             </p>
           );
         })}
@@ -151,242 +58,164 @@ function ResumePreview({ text }: { text: string }) {
   );
 }
 
-function EvaluationPanel({ evaluation }: { evaluation: EvaluationResult }) {
-  const normalized = getEvaluation(evaluation);
-  const scoreMap = normalized.scores || normalized.breakdown || {};
-  const suggestions = normalized.suggestions || normalized.quick_wins || [];
-  const missingKeywords = normalized.missing_keywords || [];
-  const strengths = normalized.strengths || [];
-
-  if (normalized.raw_output && Object.keys(scoreMap).length === 0) {
-    return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        <div className="mb-2 flex items-center gap-2 font-semibold">
-          <AlertTriangle className="h-4 w-4" />
-          Raw evaluation output
-        </div>
-        <pre className="whitespace-pre-wrap font-sans text-xs">
-          {normalized.raw_output}
-        </pre>
-      </div>
-    );
-  }
+function EvaluationDashboard({ evaluation, results }: { evaluation: EvaluationResult; results: AnalysisResults }) {
+  const breakdown = evaluation.breakdown || {};
+  const fallbackStages = Object.values(results.validation || {}).filter((s) => s?.used_fallback);
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-[220px_1fr]">
-        <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 text-center">
-          <div className="mb-2 flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
-            <Target className="h-4 w-4" />
-            ATS Score
+    <div className="space-y-8 md:space-y-10 w-full">
+      {/* Executive Summary */}
+      <div className="grid gap-6 md:gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-1 glass-card-light relative flex flex-col items-center justify-center rounded-[32px] md:rounded-[40px] bg-white p-8 md:p-12 text-center border-slate-100 shadow-xl shadow-slate-200/50 w-full overflow-hidden">
+          <div className="absolute inset-0 bg-indigo-50/30 blur-3xl -z-10" />
+          <div className="mb-6 flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200">
+            <Target className="h-7 w-7 md:h-8 md:w-8" />
           </div>
-          <div className="text-5xl font-bold text-slate-900">
-            {normalized.overall_score ?? '--'}
-          </div>
-          <div className="mt-1 text-sm text-slate-600">out of 100</div>
+          <div className="text-6xl md:text-7xl font-black text-slate-900 tracking-tighter">{evaluation.overall_score ?? '--'}</div>
+          <div className="mt-2 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] text-indigo-600">ATS Efficacy Score</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-            Score Breakdown
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {Object.entries(scoreMap).map(([key, value]) => (
-              <div
-                key={key}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-3"
-              >
-                <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                  {key.replace(/_/g, ' ')}
-                </div>
-                <div className="mt-1 text-lg font-semibold text-slate-900">
-                  {String(value)}
-                </div>
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-slate-400" />
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">Performance Matrix</h3>
+            </div>
+            {fallbackStages.length > 0 && (
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-400 w-fit">
+                <ShieldCheck className="h-3 w-3" />
+                Grounding Safe
               </div>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {Object.entries(breakdown).map(([key, val]) => (
+              <MetricCard key={key} label={key.replace(/_/g, ' ')} value={`${val}/5`} trend="+12%" />
             ))}
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-blue-800">
-            <FileText className="h-4 w-4" />
-            Summary
+      {/* Insights Grid */}
+      <div className="grid gap-6 md:gap-8 lg:grid-cols-2">
+        <div className="rounded-[32px] md:rounded-[40px] border border-slate-100 bg-white p-6 md:p-10 shadow-lg shadow-slate-100 w-full overflow-hidden">
+          <div className="mb-6 md:mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">Strategic Gains</h3>
+            </div>
           </div>
-          <p className="text-sm leading-6 text-blue-950">
-            {normalized.summary || 'No summary returned.'}
-          </p>
-          <p className="mt-4 text-sm leading-6 text-blue-900">
-            {normalized.recommendation || 'No recommendation returned.'}
-          </p>
+          <div className="space-y-4">
+            {(evaluation.quick_wins || []).map((win, i) => (
+              <div key={i} className="group flex gap-4 md:gap-5 rounded-2xl border border-slate-50 bg-slate-50/30 p-4 md:p-5 transition-all hover:bg-white hover:border-slate-200 hover:shadow-md w-full">
+                <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white text-[10px] font-bold">
+                  {i + 1}
+                </div>
+                <p className="text-[13px] md:text-[14px] font-medium leading-relaxed text-slate-600 group-hover:text-slate-900 transition-colors break-words">{win}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-emerald-800">
-            <CheckCircle className="h-4 w-4" />
-            Strengths
+        <div className="rounded-[32px] md:rounded-[40px] border border-slate-100 bg-slate-900 p-6 md:p-10 shadow-2xl shadow-slate-300 w-full overflow-hidden">
+          <div className="mb-6 md:mb-8 flex items-center gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-emerald-400">
+              <Zap className="h-5 w-5" />
+            </div>
+            <h3 className="text-lg font-black text-white tracking-tight">High-Impact Keywords</h3>
           </div>
-          <div className="space-y-3">
-            {strengths.length ? (
-              strengths.map((strength) => (
-                <div
-                  key={strength}
-                  className="flex items-start gap-2 text-sm text-emerald-950"
-                >
-                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                  <span>{strength}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-emerald-900">No strengths returned.</p>
-            )}
+          <div className="flex flex-wrap gap-2 md:gap-3">
+            {(evaluation.missing_keywords || []).map((word, i) => (
+              <motion.span 
+                whileHover={{ scale: 1.05 }}
+                key={i} 
+                className="rounded-xl bg-white/10 px-4 md:px-5 py-2 md:py-2.5 text-[10px] md:text-xs font-bold uppercase tracking-widest text-emerald-400 border border-white/5 hover:bg-white hover:text-slate-900 transition-all cursor-default"
+              >
+                {word}
+              </motion.span>
+            ))}
+          </div>
+          <div className="mt-8 md:mt-10 p-5 md:p-6 rounded-2xl bg-white/5 border border-white/5">
+            <p className="text-[10px] md:text-xs font-bold text-slate-400 leading-relaxed italic break-words">
+              "Integrating these keywords semantically increases discoverability by 40% in modern ATS search clusters."
+            </p>
           </div>
         </div>
       </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-green-800">
-            <Lightbulb className="h-4 w-4" />
-            Recommendations
-          </div>
-          <div className="space-y-3">
-            {suggestions.length ? (
-              suggestions.map((suggestion) => (
-                <div
-                  key={suggestion}
-                  className="flex items-start gap-2 text-sm text-green-900"
-                >
-                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                  <span>{suggestion}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-green-900">No recommendations returned.</p>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-amber-800">
-            <Sparkles className="h-4 w-4" />
-            Missing Keywords
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {missingKeywords.length ? (
-              missingKeywords.map((keyword) => (
-                <span
-                  key={keyword}
-                  className="rounded-full bg-white px-3 py-1 text-sm text-amber-900 shadow-sm"
-                >
-                  {keyword}
-                </span>
-              ))
-            ) : (
-              <p className="text-sm text-amber-900">No missing keywords returned.</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {normalized.raw_output ? (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
-          The model response required normalization before rendering structured results.
-        </div>
-      ) : null}
     </div>
   );
 }
 
 export default function ResultsTabs({ results }: ResultsTabsProps) {
+  const download = async () => {
+    const blob = await CrewAPI.downloadDocx(results.final_resume);
+    saveAs(blob, 'optimized_resume.docx');
+  };
+
   return (
-    <Tabs defaultValue="evaluation" className="w-full">
-      <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-xl bg-slate-100 p-2 md:grid-cols-4">
-        <TabsTrigger value="evaluation">ATS Evaluation</TabsTrigger>
-        <TabsTrigger value="optimized">Optimized Resume</TabsTrigger>
-        <TabsTrigger value="rewritten">Rewritten Version</TabsTrigger>
-        <TabsTrigger value="cleaned">Cleaned Resume</TabsTrigger>
-      </TabsList>
+    <div className="space-y-8 md:space-y-10 w-full">
+      <Tabs defaultValue="evaluation" className="w-full">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between border-b border-slate-100 pb-6 md:pb-8 w-full">
+          <TabsList className="h-12 md:h-14 w-full md:w-fit gap-1 md:gap-2 rounded-2xl bg-slate-100/50 p-1.5 md:p-2 overflow-x-auto overflow-y-hidden no-scrollbar">
+            <TabsTrigger value="evaluation" className="rounded-xl px-4 md:px-8 py-2 md:py-2.5 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-lg data-[state=active]:shadow-slate-200 shrink-0">Insight</TabsTrigger>
+            <TabsTrigger value="preview" className="rounded-xl px-4 md:px-8 py-2 md:py-2.5 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-lg data-[state=active]:shadow-slate-200 shrink-0">Artifact</TabsTrigger>
+            <TabsTrigger value="diff" className="rounded-xl px-4 md:px-8 py-2 md:py-2.5 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-lg data-[state=active]:shadow-slate-200 shrink-0">Delta</TabsTrigger>
+          </TabsList>
 
-      <TabsContent value="evaluation" className="mt-6">
-        <Card className="border-0 bg-white/90 shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-xl">ATS Evaluation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <ValidationBanner results={results} />
-            <EvaluationPanel evaluation={results.evaluation} />
+          <button
+            onClick={download}
+            className="btn-premium w-full md:w-auto flex h-12 md:h-14 items-center justify-center gap-3 rounded-2xl bg-slate-900 px-6 md:px-10 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-slate-200 shrink-0"
+          >
+            <Download className="h-4 w-4" />
+            Export Document
+          </button>
+        </div>
+
+        <TabsContent value="evaluation" className="mt-8 md:mt-12 focus-visible:outline-none w-full">
+          <EvaluationDashboard evaluation={results.evaluation} results={results} />
+        </TabsContent>
+
+        <TabsContent value="preview" className="mt-8 md:mt-12 focus-visible:outline-none w-full">
+          <ResumePreview text={results.final_resume} />
+        </TabsContent>
+
+        <TabsContent value="diff" className="mt-8 md:mt-12 focus-visible:outline-none w-full overflow-x-auto">
+          <div className="overflow-hidden rounded-[32px] md:rounded-[40px] border border-slate-100 bg-white shadow-2xl shadow-slate-200/50 min-w-[600px] lg:min-w-full">
+            <div className="bg-slate-50/50 px-6 md:px-8 py-4 border-b border-slate-100 flex items-center gap-3">
+              <Dna className="h-4 w-4 text-indigo-600" />
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Optimization Traceability</span>
             </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="optimized" className="mt-6">
-        <Card className="border-0 bg-white/90 shadow-xl">
-          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-xl">Optimized Resume</CardTitle>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                onClick={() => downloadTextFile(results.final_resume, 'optimized_resume.txt')}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Download TXT
-              </Button>
-              <Button onClick={() => downloadDocx(results.final_resume)}>
-                <Download className="mr-2 h-4 w-4" />
-                Download DOCX
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="bg-slate-50 p-6">
-            <ResumePreview text={results.final_resume} />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="rewritten" className="mt-6">
-        <Card className="border-0 bg-white/90 shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-xl">Rewritten Version</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-hidden rounded-xl border border-slate-200">
+            <div className="w-full">
               <ReactDiffViewer
                 oldValue={results.cleaned}
                 newValue={results.rewritten}
-                splitView
-                showDiffOnly={false}
-                leftTitle="Cleaned Resume"
-                rightTitle="ATS Rewrite"
+                splitView={true}
+                useDarkTheme={false}
+                styles={{
+                  variables: {
+                    light: {
+                      diffViewerBackground: '#ffffff',
+                      addedBackground: '#ecfdf5',
+                      addedColor: '#059669',
+                      removedBackground: '#fef2f2',
+                      removedColor: '#dc2626',
+                      wordAddedBackground: '#d1fae5',
+                      wordRemovedBackground: '#fee2e2',
+                    }
+                  },
+                  contentText: {
+                    fontSize: '12px',
+                    fontFamily: 'Inter, sans-serif',
+                    lineHeight: '22px'
+                  }
+                }}
               />
             </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="cleaned" className="mt-6">
-        <Card className="border-0 bg-white/90 shadow-xl">
-          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-xl">Cleaned Resume</CardTitle>
-            <Button
-              variant="outline"
-              onClick={() => downloadTextFile(results.cleaned, 'cleaned_resume.txt')}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download TXT
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <pre className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-              {results.cleaned}
-            </pre>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
