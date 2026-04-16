@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from html import escape
 from io import BytesIO
 import re
 
+from docx import Document
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt, RGBColor
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import letter
@@ -87,13 +91,52 @@ class ResumeDocument:
     extracurricular: list[str] = field(default_factory=list)
 
 
-def render_resume_pdf_bytes(final_resume_text: str) -> bytes:
-    parsed = parse_resume_text(final_resume_text)
+def structured_resume_from_text(final_resume_text: str) -> dict:
+    return asdict(parse_resume_text(final_resume_text))
+
+
+def structured_resume_from_payload(payload: dict | None, final_resume_text: str = "") -> dict:
+    if payload:
+        return payload
+    return structured_resume_from_text(final_resume_text)
+
+
+def resume_document_from_payload(payload: dict | None, final_resume_text: str = "") -> ResumeDocument:
+    if not payload:
+        return parse_resume_text(final_resume_text)
+
+    return ResumeDocument(
+        name=str(payload.get("name", "")).strip() or "Candidate Name",
+        location=str(payload.get("location", "")).strip(),
+        phone=str(payload.get("phone", "")).strip(),
+        email=str(payload.get("email", "")).strip(),
+        links=[(str(label), str(url)) for label, url in payload.get("links", []) if label and url],
+        summary=[str(item).strip() for item in payload.get("summary", []) if str(item).strip()],
+        education=_entries_from_payload(payload.get("education", [])),
+        experience=_entries_from_payload(payload.get("experience", [])),
+        projects=_entries_from_payload(payload.get("projects", [])),
+        skills=[
+            (str(label).strip(), str(value).strip())
+            for label, value in payload.get("skills", [])
+            if str(label).strip() and str(value).strip()
+        ],
+        certifications=[str(item).strip() for item in payload.get("certifications", []) if str(item).strip()],
+        extracurricular=[str(item).strip() for item in payload.get("extracurricular", []) if str(item).strip()],
+    )
+
+
+def render_resume_pdf_bytes(final_resume_text: str = "", structured_resume: dict | None = None) -> bytes:
+    parsed = resume_document_from_payload(structured_resume, final_resume_text)
     return _build_pdf(parsed)
 
 
-def render_resume_html(final_resume_text: str) -> str:
-    parsed = parse_resume_text(final_resume_text)
+def render_resume_docx_bytes(final_resume_text: str = "", structured_resume: dict | None = None) -> bytes:
+    parsed = resume_document_from_payload(structured_resume, final_resume_text)
+    return _build_docx(parsed)
+
+
+def render_resume_html(final_resume_text: str = "", structured_resume: dict | None = None) -> str:
+    parsed = resume_document_from_payload(structured_resume, final_resume_text)
     return _build_html(parsed)
 
 
@@ -116,6 +159,21 @@ def parse_resume_text(final_resume_text: str) -> ResumeDocument:
         certifications=_parse_simple_lines(section_map.get("certifications", [])),
         extracurricular=_parse_simple_lines(section_map.get("extracurricular", [])),
     )
+
+
+def _entries_from_payload(items: list[dict]) -> list[ResumeEntry]:
+    entries: list[ResumeEntry] = []
+    for item in items:
+        entries.append(
+            ResumeEntry(
+                title=str(item.get("title", "")).strip(),
+                date=str(item.get("date", "")).strip(),
+                subtitle=str(item.get("subtitle", "")).strip(),
+                location=str(item.get("location", "")).strip(),
+                bullets=[str(bullet).strip() for bullet in item.get("bullets", []) if str(bullet).strip()],
+            )
+        )
+    return entries
 
 
 def _build_html(parsed: ResumeDocument) -> str:
@@ -216,6 +274,51 @@ def _build_pdf(parsed: ResumeDocument) -> bytes:
     story = _build_story(parsed, styles)
     doc.build(story)
     return buffer.getvalue()
+
+
+def _build_docx(parsed: ResumeDocument) -> bytes:
+    document = Document()
+    for section in document.sections:
+        section.top_margin = Inches(0.55)
+        section.bottom_margin = Inches(0.55)
+        section.left_margin = Inches(0.65)
+        section.right_margin = Inches(0.65)
+
+    normal = document.styles["Normal"]
+    normal.font.name = "Calibri"
+    normal.font.size = Pt(10.5)
+
+    title = document.add_paragraph()
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = title.add_run(parsed.name)
+    run.bold = True
+    run.font.size = Pt(21)
+
+    meta_parts: list[str] = []
+    if parsed.location:
+        meta_parts.append(parsed.location)
+    if parsed.phone:
+        meta_parts.append(parsed.phone)
+    if parsed.email:
+        meta_parts.append(parsed.email)
+    meta_parts.extend(label for label, _ in parsed.links[:5])
+    if meta_parts:
+        meta = document.add_paragraph()
+        meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        meta_run = meta.add_run(" | ".join(meta_parts))
+        meta_run.font.size = Pt(9.5)
+
+    _docx_add_summary(document, parsed.summary)
+    _docx_add_entries_section(document, "EDUCATION", parsed.education)
+    _docx_add_entries_section(document, "EXPERIENCE", parsed.experience)
+    _docx_add_entries_section(document, "PROJECTS", parsed.projects, project_mode=True)
+    _docx_add_skills_section(document, parsed.skills)
+    _docx_add_list_section(document, "CERTIFICATIONS", parsed.certifications)
+    _docx_add_list_section(document, "EXTRACURRICULAR", parsed.extracurricular)
+
+    out = BytesIO()
+    document.save(out)
+    return out.getvalue()
 
 
 def _build_styles() -> dict[str, ParagraphStyle]:
@@ -327,6 +430,114 @@ def _build_story(parsed: ResumeDocument, styles: dict[str, ParagraphStyle]) -> l
     _add_list_section(story, "EXTRACURRICULAR", parsed.extracurricular, styles)
 
     return story
+
+
+def _docx_add_section_heading(document: Document, title: str) -> None:
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.space_before = Pt(6)
+    paragraph.paragraph_format.space_after = Pt(1)
+    run = paragraph.add_run(title)
+    run.bold = True
+    run.font.size = Pt(10.5)
+    rule = document.add_paragraph()
+    rule.paragraph_format.space_after = Pt(3)
+    border_run = rule.add_run("_" * 140)
+    border_run.font.size = Pt(4)
+    border_run.font.color.rgb = RGBColor(203, 213, 225)
+
+
+def _docx_add_summary(document: Document, summary: list[str]) -> None:
+    if not summary:
+        return
+    _docx_add_section_heading(document, "SUMMARY")
+    paragraph = document.add_paragraph(" ".join(summary))
+    paragraph.paragraph_format.space_after = Pt(4)
+
+
+def _docx_add_entries_section(
+    document: Document,
+    title: str,
+    entries: list[ResumeEntry],
+    project_mode: bool = False,
+) -> None:
+    if not entries:
+        return
+    _docx_add_section_heading(document, title)
+    for entry in entries:
+        _docx_add_entry(document, entry, project_mode=project_mode)
+
+
+def _docx_add_entry(document: Document, entry: ResumeEntry, project_mode: bool = False) -> None:
+    table = document.add_table(rows=2, cols=2)
+    table.alignment = WD_TABLE_ALIGNMENT.LEFT
+    table.autofit = False
+    table.columns[0].width = Inches(5.9)
+    table.columns[1].width = Inches(1.1)
+
+    left_title = entry.title
+    if project_mode and entry.subtitle:
+        left_title = f"{left_title} | {entry.subtitle}"
+
+    top_left = table.cell(0, 0).paragraphs[0]
+    top_left.paragraph_format.space_after = Pt(0)
+    top_left_run = top_left.add_run(left_title)
+    top_left_run.bold = True
+
+    top_right = table.cell(0, 1).paragraphs[0]
+    top_right.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    top_right.paragraph_format.space_after = Pt(0)
+    top_right_run = top_right.add_run(entry.date)
+    top_right_run.bold = True
+
+    if not project_mode:
+        bottom_left = table.cell(1, 0).paragraphs[0]
+        bottom_left.paragraph_format.space_after = Pt(0)
+        bottom_left_run = bottom_left.add_run(entry.subtitle)
+        bottom_left_run.italic = True
+    else:
+        table.cell(1, 0).text = ""
+
+    bottom_right = table.cell(1, 1).paragraphs[0]
+    bottom_right.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    bottom_right.paragraph_format.space_after = Pt(0)
+    bottom_right_run = bottom_right.add_run("" if project_mode else entry.location)
+    bottom_right_run.italic = True
+
+    for row in table.rows:
+        for cell in row.cells:
+            for paragraph in cell.paragraphs:
+                paragraph.paragraph_format.space_before = Pt(0)
+                paragraph.paragraph_format.space_after = Pt(0)
+
+    for bullet in entry.bullets:
+        paragraph = document.add_paragraph(style="List Bullet")
+        paragraph.paragraph_format.space_after = Pt(0.5)
+        paragraph.add_run(bullet)
+
+    spacer = document.add_paragraph()
+    spacer.paragraph_format.space_after = Pt(1)
+
+
+def _docx_add_skills_section(document: Document, skills: list[tuple[str, str]]) -> None:
+    if not skills:
+        return
+    _docx_add_section_heading(document, "TECHNICAL SKILLS")
+    for label, value in skills:
+        paragraph = document.add_paragraph()
+        paragraph.paragraph_format.space_after = Pt(1)
+        label_run = paragraph.add_run(f"{label}: ")
+        label_run.bold = True
+        paragraph.add_run(value)
+
+
+def _docx_add_list_section(document: Document, title: str, items: list[str]) -> None:
+    if not items:
+        return
+    _docx_add_section_heading(document, title)
+    for item in items:
+        paragraph = document.add_paragraph(style="List Bullet")
+        paragraph.paragraph_format.space_after = Pt(0.5)
+        paragraph.add_run(item)
 
 
 def _add_section_heading(story: list, title: str, styles: dict[str, ParagraphStyle]) -> None:

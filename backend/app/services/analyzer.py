@@ -1,8 +1,6 @@
 from time import perf_counter
 from typing import Callable, Awaitable, Optional
 
-from crew_app.file_tools.file_loader import detect_and_extract
-from crew_app.utils import txt_to_docx_bytes
 from backend.app.services.evaluation import normalize_evaluation_payload
 from backend.app.services.errors import (
     AnalyzerConfigurationError,
@@ -10,6 +8,11 @@ from backend.app.services.errors import (
     ResumeExtractionError,
     UpstreamModelError,
 )
+from backend.app.services.pdf_renderer import (
+    render_resume_docx_bytes,
+    structured_resume_from_text,
+)
+from crew_app.file_tools.file_loader import detect_and_extract
 from backend.app.services.validation import validate_resume_grounding
 
 
@@ -170,8 +173,10 @@ async def analyze_resume(
     )
     evaluation_ms = round((perf_counter() - evaluation_started_at) * 1000, 2)
 
+    structured_resume = structured_resume_from_text(validated_final_resume)
+
     docx_started_at = perf_counter()
-    docx_bytes = txt_to_docx_bytes(validated_final_resume)
+    docx_bytes = render_resume_docx_bytes(structured_resume=structured_resume)
     docx_generation_ms = round((perf_counter() - docx_started_at) * 1000, 2)
 
     if on_progress:
@@ -181,6 +186,7 @@ async def analyze_resume(
         "cleaned": cleaned,
         "rewritten": validated_rewritten,
         "final_resume": validated_final_resume,
+        "structured_resume": structured_resume,
         "evaluation": parsed_eval,
         "validation": {
             "rewrite": rewrite_validation,

@@ -28,6 +28,7 @@ def test_analyze_resume_repairs_rewrite_before_fallback():
     assert result["telemetry"]["grounding"]["rewrite"]["repair_succeeded"] is True
     assert result["telemetry"]["evaluation"]["source"] == "model_json"
     assert result["telemetry"]["pipeline"]["stages"][0]["stage"] == "rewrite"
+    assert result["structured_resume"]["name"] == "JANE DOE"
 
 
 def test_analyze_resume_falls_back_after_failed_repair():
@@ -55,3 +56,4 @@ def test_analyze_resume_falls_back_after_failed_repair():
     assert result["validation"]["rewrite"]["used_fallback"] is True
     assert result["validation"]["final_resume"]["used_fallback"] is True
     assert result["telemetry"]["grounding"]["final_resume"]["used_fallback"] is True
+    assert result["structured_resume"]["name"] == "JANE DOE"

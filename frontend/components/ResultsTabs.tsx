@@ -150,12 +150,12 @@ function EvaluationDashboard({ evaluation, results }: { evaluation: EvaluationRe
 
 export default function ResultsTabs({ results }: ResultsTabsProps) {
   const downloadDocx = async () => {
-    const blob = await CrewAPI.downloadDocx(results.final_resume);
+    const blob = await CrewAPI.downloadDocx(results.final_resume, results.structured_resume);
     saveAs(blob, 'optimized_resume.docx');
   };
 
   const downloadPdf = async () => {
-    const blob = await CrewAPI.downloadPdf(results.final_resume);
+    const blob = await CrewAPI.downloadPdf(results.final_resume, results.structured_resume);
     saveAs(blob, 'optimized_resume.pdf');
   };
 

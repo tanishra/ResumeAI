@@ -45,6 +45,7 @@ def test_analyze_returns_structured_results():
             "cleaned": "cleaned",
             "rewritten": "rewritten",
             "final_resume": "final",
+            "structured_resume": {"name": "Jane Doe", "summary": ["Built APIs."]},
             "evaluation": {"overall_score": 88, "breakdown": {"keyword_match": 4}},
             "validation": {
                 "rewrite": {"stage": "rewrite", "passed": True, "used_fallback": False, "issues": []},
@@ -127,11 +128,10 @@ def test_download_docx_uses_final_resume_without_rerunning_analysis():
     mock_analyze.assert_not_called()
 
     document = Document(io.BytesIO(response.content))
-    assert [paragraph.text for paragraph in document.paragraphs] == [
-        "JANE DOE",
-        "SUMMARY",
-        "Built reliable backend APIs.",
-    ]
+    paragraph_text = [paragraph.text for paragraph in document.paragraphs if paragraph.text.strip()]
+    assert "JANE DOE" in paragraph_text
+    assert "SUMMARY" in paragraph_text
+    assert "Built reliable backend APIs." in paragraph_text
 
 
 def test_download_docx_rejects_empty_final_resume():

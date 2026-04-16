@@ -56,10 +56,34 @@ export interface AnalysisTelemetry {
   };
 }
 
+export interface StructuredResumeEntry {
+  title: string;
+  date: string;
+  subtitle: string;
+  location: string;
+  bullets: string[];
+}
+
+export interface StructuredResume {
+  name: string;
+  location: string;
+  phone: string;
+  email: string;
+  links: [string, string][];
+  summary: string[];
+  education: StructuredResumeEntry[];
+  experience: StructuredResumeEntry[];
+  projects: StructuredResumeEntry[];
+  skills: [string, string][];
+  certifications: string[];
+  extracurricular: string[];
+}
+
 export interface AnalysisResults {
   cleaned: string;
   rewritten: string;
   final_resume: string;
+  structured_resume?: StructuredResume;
   evaluation: EvaluationResult;
   validation?: ValidationResult;
   telemetry?: AnalysisTelemetry;
@@ -139,9 +163,12 @@ export class CrewAPI {
     return results;
   }
 
-  static async downloadDocx(finalResume: string): Promise<Blob> {
+  static async downloadDocx(finalResume: string, structuredResume?: StructuredResume): Promise<Blob> {
     const formData = new FormData();
     formData.append('final_resume', finalResume);
+    if (structuredResume) {
+      formData.append('structured_resume_json', JSON.stringify(structuredResume));
+    }
 
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     const response = await fetch(`${backendUrl}/resume/download-docx`, {
@@ -156,9 +183,12 @@ export class CrewAPI {
     return await response.blob();
   }
 
-  static async downloadPdf(finalResume: string): Promise<Blob> {
+  static async downloadPdf(finalResume: string, structuredResume?: StructuredResume): Promise<Blob> {
     const formData = new FormData();
     formData.append('final_resume', finalResume);
+    if (structuredResume) {
+      formData.append('structured_resume_json', JSON.stringify(structuredResume));
+    }
 
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     const response = await fetch(`${backendUrl}/resume/download-pdf`, {

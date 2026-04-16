@@ -3,7 +3,9 @@ from unittest.mock import patch
 from backend.app.services.pdf_renderer import (
     parse_resume_text,
     render_resume_html,
+    render_resume_docx_bytes,
     render_resume_pdf_bytes,
+    structured_resume_from_text,
 )
 
 
@@ -131,6 +133,35 @@ Backend engineer focused on APIs and platform reliability.
     pdf_bytes = render_resume_pdf_bytes(resume_text)
 
     assert pdf_bytes.startswith(b"%PDF")
+
+
+def test_structured_resume_from_text_returns_serializable_schema():
+    resume_text = """JANE DOE
+Austin, TX
+jane@example.com
+
+SUMMARY
+Backend engineer focused on APIs.
+"""
+
+    structured = structured_resume_from_text(resume_text)
+
+    assert structured["name"] == "JANE DOE"
+    assert structured["summary"] == ["Backend engineer focused on APIs."]
+
+
+def test_render_resume_docx_bytes_returns_real_docx():
+    resume_text = """JANE DOE
+Austin, TX
+jane@example.com
+
+SUMMARY
+Backend engineer focused on APIs.
+"""
+
+    docx_bytes = render_resume_docx_bytes(resume_text)
+
+    assert docx_bytes[:2] == b"PK"
 
 
 def test_download_pdf_route_uses_pdf_renderer():
