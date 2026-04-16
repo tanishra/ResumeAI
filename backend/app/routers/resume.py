@@ -1,5 +1,6 @@
 import json
 import asyncio
+import logging
 from fastapi import APIRouter, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from sse_starlette.sse import EventSourceResponse
@@ -7,6 +8,7 @@ from backend.app.services.analyzer import analyze_resume
 from backend.app.services.errors import ResumeAnalyzerError
 from crew_app.utils import txt_to_docx_bytes
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/resume", tags=["Resume"])
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt"}
@@ -18,9 +20,11 @@ def _validate_request(file: UploadFile, contents: bytes, job_title: str, job_des
     extension = f".{filename.rsplit('.', 1)[-1]}" if "." in filename else ""
 
     if extension not in ALLOWED_EXTENSIONS:
+        logger.warning(f"Rejected upload with unsupported extension: {extension}")
         raise HTTPException(status_code=400, detail="Unsupported file type. Use PDF, DOCX, or TXT.")
 
     if len(contents) > MAX_FILE_SIZE_BYTES:
+        logger.warning(f"Rejected upload exceeding size limit: {len(contents)} bytes")
         raise HTTPException(status_code=413, detail="File size exceeds the 10MB limit.")
 
     if not job_title.strip():
@@ -35,6 +39,7 @@ async def analyze(
     job_title: str = Form(...),
     job_description: str = Form(...)
 ):
+    logger.info(f"Analysis request received for file: {file.filename}, job: {job_title}")
     contents = await file.read()
     _validate_request(file, contents, job_title, job_description)
     
@@ -42,15 +47,19 @@ async def analyze(
         queue = asyncio.Queue()
 
         async def on_progress(message: str):
+            logger.info(f"Progress update: {message}")
             await queue.put({"type": "progress", "message": message})
 
         async def run_analysis():
             try:
                 results = await analyze_resume(file.filename, contents, job_title, job_description, on_progress=on_progress)
                 await queue.put({"type": "results", "data": results})
+                logger.info("Analysis successfully completed")
             except ResumeAnalyzerError as exc:
+                logger.error(f"ResumeAnalyzerError: {exc.detail} (code: {exc.error_code})")
                 await queue.put({"type": "error", "detail": exc.detail, "code": exc.error_code})
             except Exception as exc:
+                logger.exception("Unexpected error during resume analysis pipeline")
                 await queue.put({"type": "error", "detail": str(exc), "code": "unexpected_error"})
             finally:
                 await queue.put(None)
@@ -71,6 +80,7 @@ async def analyze(
 async def download_docx(
     final_resume: str = Form(...),
 ):
+    logger.info("DOCX download requested")
     try:
         if not final_resume.strip():
             raise HTTPException(status_code=400, detail="Final resume content is required.")
@@ -83,6 +93,7 @@ async def download_docx(
     except HTTPException:
         raise
     except Exception:
+        logger.exception("Error generating DOCX document")
         raise HTTPException(
             status_code=500,
             detail="The resume document could not be generated.",

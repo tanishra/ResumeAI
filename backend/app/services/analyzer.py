@@ -210,6 +210,5 @@ async def analyze_resume(
             },
             "pipeline": pipeline_results["diagnostics"],
             "evaluation": evaluation_metadata,
-        },
-        "docx_bytes": docx_bytes,
+        }
     }

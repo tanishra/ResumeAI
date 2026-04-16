@@ -1,6 +1,16 @@
+import logging
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.routers import resume
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger("backend")
 
 app = FastAPI(title="Resume Analyzer API", version="1.0.0")
 
@@ -20,6 +30,7 @@ app.include_router(resume.router)
 
 @app.get("/")
 def health_check():
+    logger.info("Root health check called")
     return {"status": "ok", "message": "Backend is running"}
 
 
