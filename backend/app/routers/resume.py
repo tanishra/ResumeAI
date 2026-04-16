@@ -6,7 +6,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 from backend.app.services.analyzer import analyze_resume
 from backend.app.services.errors import ResumeAnalyzerError
-from crew_app.utils import txt_to_docx_bytes, txt_to_pdf_bytes
+from crew_app.utils import txt_to_docx_bytes
+from backend.app.services.pdf_renderer import render_resume_pdf_bytes
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/resume", tags=["Resume"])
@@ -109,7 +110,7 @@ async def download_pdf(
         if not final_resume.strip():
             raise HTTPException(status_code=400, detail="Final resume content is required.")
 
-        pdf_bytes = txt_to_pdf_bytes(final_resume.strip())
+        pdf_bytes = render_resume_pdf_bytes(final_resume.strip())
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
@@ -117,6 +118,13 @@ async def download_pdf(
         )
     except HTTPException:
         raise
+    except ValueError as exc:
+        logger.exception("Error generating PDF document")
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc),
+            headers={"X-Error-Code": "pdf_generation_error"},
+        )
     except Exception:
         logger.exception("Error generating PDF document")
         raise HTTPException(

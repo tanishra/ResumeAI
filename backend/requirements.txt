@@ -8,5 +8,6 @@ fpdf2
 python-dotenv
 python-multipart
 pytest
+reportlab
 uvicorn[standard]
 sse-starlette
