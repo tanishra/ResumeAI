@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Zap, Target, ArrowDown, ChevronRight, Sparkles } from 'lucide-react';
+import { Shield, Zap, Target, ArrowDown, ChevronRight, Sparkles, ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header';
 import ResumeAnalyzer from '@/components/ResumeAnalyzer';
 import ResultsTabs from '@/components/ResultsTabs';
@@ -133,11 +133,17 @@ export default function Home() {
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  return (
-    <main className="relative selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden min-h-screen">
-      <div className="light-mesh" />
-      <Header />
+  // Force scroll to top when results are loaded
+  useEffect(() => {
+    if (analysisResults) {
+      window.scrollTo(0, 0);
+    }
+  }, [analysisResults]);
 
+  return (
+    <div className="relative w-full bg-white selection:bg-indigo-100 selection:text-indigo-900 min-h-screen">
+      <div className="light-mesh" />
+      
       <AnimatePresence mode="wait">
         {!analysisResults ? (
           <motion.div
@@ -146,7 +152,9 @@ export default function Home() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -40 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full"
           >
+            <Header />
             <HeroSection />
             <FeaturesSection />
             
@@ -169,21 +177,22 @@ export default function Home() {
             key="results"
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="section-container pb-24 md:pb-32 pt-32"
+            className="section-container py-12 md:py-24 min-h-screen w-full"
           >
-            <div className="mb-10 md:mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-              <div className="max-w-xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-bold uppercase tracking-[0.2em] mb-4">
-                  Intelligence Report 01
-                </div>
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 break-words">Analysis Result.</h2>
-              </div>
+            <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-8">
               <button
                 onClick={() => setAnalysisResults(null)}
-                className="btn-premium w-full md:w-auto flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-8 py-4 text-xs font-bold uppercase tracking-widest text-slate-600 shadow-sm"
+                className="group flex w-fit items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors"
               >
-                Reset Session
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 group-hover:bg-indigo-50 transition-colors">
+                  <ArrowLeft className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-black uppercase tracking-[0.2em]">Return to Home</span>
               </button>
+
+              <div className="text-center md:text-right">
+                <h2 className="text-3xl font-black tracking-tighter text-slate-900">Analysis Output.</h2>
+              </div>
             </div>
             
             <ResultsTabs results={analysisResults} />
@@ -191,7 +200,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <footer className="border-t border-slate-100 bg-white py-16 md:py-20">
+      <footer className="border-t border-slate-100 bg-white py-16 md:py-20 w-full">
         <div className="section-container flex flex-col items-center justify-between gap-10 md:flex-row text-center md:text-left">
           <div className="space-y-4">
             <div className="text-xl font-black tracking-tighter text-slate-900">Resume<span className="text-indigo-600">AI.</span></div>
@@ -211,6 +220,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-    </main>
+    </div>
   );
 }

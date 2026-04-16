@@ -24,7 +24,6 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   scroll-behavior: smooth;
-  overflow-x: hidden;
 }
 
 /* Global Overflow Protection */
