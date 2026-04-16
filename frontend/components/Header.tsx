@@ -33,17 +33,11 @@ export default function Header() {
           >
             Methodology
           </button>
-          <Link href="#" className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 transition-colors hover:text-indigo-600">
-            Security
-          </Link>
-          <Link href="#" className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 transition-colors hover:text-indigo-600">
-            Enterprise
-          </Link>
         </nav>
 
         <div className="flex items-center gap-4 md:gap-6">
           <a
-            href="https://github.com"
+            href="https://github.com/tanishra/ResumeAI"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:block text-slate-400 transition-colors hover:text-slate-900"
