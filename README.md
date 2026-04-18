@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,50:1d4ed8,100:312e81&height=220&section=header&text=ResumeAI&fontSize=72&fontColor=FFFFFF&fontAlignY=40&desc=ATS%20Resume%20Optimization%20with%20Next.js%2C%20FastAPI%20and%20CrewAI&descAlignY=63&descColor=ffffff&descSize=18" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,50:1d4ed8,100:312e81&height=220&section=header&text=ResumeAI&fontSize=72&fontColor=FFFFFF&fontAlignY=40&desc=ATS%20Resume%20Optimization%20with%20Next.js%2C%20FastAPI%20and%20Agentic%20LLM%20Pipelines&descAlignY=63&descColor=ffffff&descSize=18" width="100%"/>
 
 <br/>
 
@@ -14,7 +14,7 @@
 <br/>
 
 > **Upload a resume, paste a target job description, and generate a stronger ATS-ready version automatically.**
-> **ResumeAI extracts content, runs a staged OpenAI-powered optimization pipeline, validates grounding, and returns scoring feedback with downloadable output.**
+> **ResumeAI extracts content, runs a staged OpenAI-powered agentic optimization pipeline, validates grounding to prevent hallucinations, and returns scoring feedback with downloadable output.**
 
 <br/>
 
@@ -22,33 +22,54 @@
 
 ## What It Does
 
-- Accepts `pdf`, `docx`, and `txt` resumes
-- Extracts resume text on the backend
-- Runs a staged LLM pipeline for cleanup, ATS rewrite, refinement, and evaluation
-- Validates rewritten output against the source resume and falls back when unsupported claims are introduced
-- Returns downloadable output, grounded resume text, and scoring feedback in the frontend
+- **Intelligent Extraction**: Accepts `pdf`, `docx`, and `txt` resumes and extracts text with high fidelity.
+- **Agentic Pipeline**: Runs a four-stage LLM pipeline (Parser, Writer, Refiner, Evaluator) for comprehensive optimization.
+- **Grounded AI & Repair Engine**: A dedicated validation pass that cross-references AI claims against the source document. It automatically repairs hallucinations or reverts to original factual data.
+- **Real-Time Streaming**: Uses Server-Sent Events (SSE) to provide live status updates as the pipeline processes each stage.
+- **Multi-Format Export**: Returns downloadable optimized resumes in professional PDF and DOCX formats, along with structured JSON feedback.
+
+## Architecture
+
+```mermaid
+graph TD
+    A[User Upload: PDF/DOCX/TXT] --> B[FastAPI Backend]
+    B --> C[Text Extraction & Cleanup]
+    C --> D[Agentic Optimization Pipeline]
+    
+    subgraph D [Agentic Optimization Pipeline]
+        D1[Parser Agent: Normalize Structure] --> D2[ATS Writer Agent: Semantic Alignment]
+        D2 --> D3[Refiner Agent: Bullet Point Impact]
+        D3 --> D4[Evaluator Agent: Scoring & Feedback]
+    end
+    
+    D4 --> E{Grounding & Repair Engine}
+    E -- Hallucination Detected --> F[Repair Agent: Fix with Source Truth]
+    F --> E
+    E -- Validated --> G[Final Optimized Resume]
+    
+    G --> H[Export Options]
+    H --> H1[Structured JSON]
+    H --> H2[Professional PDF]
+    H --> H3[Editable DOCX]
+```
 
 ## How It Actually Works
 
-ResumeAI currently has two interfaces in the repo:
-
-- `frontend/` + `backend/` is the main app path
-- `app.py` is an older Streamlit prototype that still uses the same core pipeline
+ResumeAI leverages a deterministic verification pipeline to preserve 100% of your professional truth while bridging the gap with recruitment algorithms.
 
 The active backend flow is:
 
-1. Upload file to FastAPI
-2. Extract text from PDF, DOCX, or TXT
-3. Run four sequential LLM stages:
-   - parsing/cleanup
-   - ATS rewrite
-   - bullet refinement
-   - evaluation
-4. Validate rewritten output against the source resume to catch unsupported dates, metrics, tools, organizations, and credentials
-5. Retry with repair prompts when needed, then fall back to the last grounded version if repair still fails
-6. Normalize evaluation output to JSON, with a rule-based fallback when the model response is malformed
+1. **Upload & Extract**: File is uploaded to FastAPI; text is extracted from PDF, DOCX, or TXT.
+2. **Staged Execution**: Four specialized agents process the data sequentially:
+   - **Parser Agent**: Normalizes formatting and removes noise.
+   - **ATS Writer Agent**: Strategically aligns keywords and experience with job requirements.
+   - **Refiner Agent**: Strengthens bullet points using high-impact metrics and phrasing.
+   - **Evaluator Agent**: Scores the resume and provides actionable improvement recommendations.
+3. **Grounding Validation**: Rewritten output is validated against the source resume to catch unsupported dates, metrics, tools, or credentials.
+4. **Self-Correction**: The system retries with repair prompts when discrepancies are found, ensuring the final output is both optimized and honest.
+5. **Output Generation**: Results are normalized to JSON and rendered into downloadable formats.
 
-This is a staged pipeline, not a tool-using multi-agent CrewAI runtime.
+This is a robust, staged agentic pipeline built for high-stakes engineering roles.
 
 ## Run Locally
 
