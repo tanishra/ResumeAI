@@ -98,7 +98,7 @@ function FeaturesSection() {
               Engineered for the <span className="text-indigo-600">modern candidate.</span>
             </h2>
             <p className="mt-6 text-xl text-slate-500 font-medium leading-relaxed">
-              We've replaced generic LLM prompts with a deterministic verification pipeline that preserves 100% of your truth.
+              We&apos;ve replaced generic LLM prompts with a deterministic verification pipeline that preserves 100% of your truth.
             </p>
           </div>
           <div className="h-px flex-1 bg-slate-200 mb-4 hidden lg:block" />

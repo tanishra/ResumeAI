@@ -139,7 +139,7 @@ function EvaluationDashboard({ evaluation, results }: { evaluation: EvaluationRe
           </div>
           <div className="mt-8 md:mt-10 p-5 md:p-6 rounded-2xl bg-white/5 border border-white/5">
             <p className="text-[10px] md:text-xs font-bold text-slate-400 leading-relaxed italic break-words">
-              "Integrating these keywords semantically increases discoverability by 40% in modern ATS search clusters."
+              &quot;Integrating these keywords semantically increases discoverability by 40% in modern ATS search clusters.&quot;
             </p>
           </div>
         </div>
