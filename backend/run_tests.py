@@ -8,4 +8,7 @@ import pytest
 
 
 if __name__ == "__main__":
-    raise SystemExit(pytest.main(["backend/tests", *sys.argv[1:]]))
+    args = ["backend/tests", *sys.argv[1:]]
+    if "-p asyncio" not in " ".join(args):
+        args.extend(["-p", "asyncio"])
+    raise SystemExit(pytest.main(args))
