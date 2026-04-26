@@ -1,21 +1,39 @@
 import logging
+import os
 import sys
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.routers import resume
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+from pythonjsonlogger import jsonlogger
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
-)
+from backend.app.routers import resume
+from backend.app.routers.resume import limiter
+
+# Configure JSON logging
 logger = logging.getLogger("backend")
+logger.setLevel(logging.INFO)
+logHandler = logging.StreamHandler(sys.stdout)
+formatter = jsonlogger.JsonFormatter(
+    fmt="%(asctime)s %(levelname)s %(name)s %(message)s"
+)
+logHandler.setFormatter(formatter)
+if not logger.handlers:
+    logger.addHandler(logHandler)
 
 app = FastAPI(title="Resume Analyzer API", version="1.0.0")
 
-# Allow only localhost (since no production domain yet)
-origins = ["http://localhost:3000","https://resume-ai-five-snowy.vercel.app"]
+# Add Rate Limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Add ProxyHeadersMiddleware to properly handle forwarded IPs
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
+# CORS configuration
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://resume-ai-five-snowy.vercel.app")
+origins = [origin.strip() for origin in allowed_origins_env.split(",")]
 
 app.add_middleware(
     CORSMiddleware,

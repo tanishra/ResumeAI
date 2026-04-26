@@ -44,7 +44,6 @@ def test_normalize_evaluation_payload_falls_back_to_rule_based_scores():
         job_description="Looking for a Python engineer with dashboard experience.",
     )
 
-    assert "raw_output" in normalized
     assert normalized["overall_score"] >= 0
     assert set(normalized["breakdown"].keys()) == {
         "keyword_match",

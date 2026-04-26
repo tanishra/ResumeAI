@@ -10,7 +10,21 @@ load_dotenv()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 
-class LangChainOpenAILLM:
+from abc import ABC, abstractmethod
+
+class BaseLLM(ABC):
+    @abstractmethod
+    async def call(
+        self,
+        messages: Union[str, List[Dict[str, Any]]],
+        tools: Optional[List[dict]] = None,
+        callbacks: Optional[List[Any]] = None,
+        available_functions: Optional[Dict[str, Any]] = None,
+        json_mode: bool = False,
+    ) -> str:
+        pass
+
+class LangChainOpenAILLM(BaseLLM):
     def __init__(self, model: str, api_key: str, temperature: Optional[float] = None):
         from langchain_openai import ChatOpenAI
 
@@ -97,14 +111,15 @@ class ResumeAgent:
     role: str
     goal: str
     backstory: str
-    llm: LangChainOpenAILLM
+    llm: BaseLLM
 
 
-def _build_llm(temperature: float) -> LangChainOpenAILLM:
+def _build_llm(temperature: float) -> BaseLLM:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY environment variable is required")
 
+    # In the future, this can be switched based on an env var like LLM_PROVIDER
     return LangChainOpenAILLM(
         model=OPENAI_MODEL,
         api_key=api_key,
