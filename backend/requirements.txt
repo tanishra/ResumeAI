@@ -11,3 +11,7 @@ pytest
 reportlab
 uvicorn[standard]
 sse-starlette
+filetype
+slowapi
+python-json-logger
+diskcache

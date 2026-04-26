@@ -12,3 +12,4 @@ resumeai # virtual environment
 /node_modules
 __pycache__
 .vscode
+.cache/

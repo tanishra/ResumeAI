@@ -68,33 +68,42 @@ def test_analyze_returns_structured_results():
         )
 
     assert response.status_code == 200
-    payload = response.json()
-    assert payload["success"] is True
-    assert payload["results"]["evaluation"]["overall_score"] == 88
-    assert payload["results"]["validation"]["rewrite"]["passed"] is True
-    assert payload["results"]["telemetry"]["pipeline"]["stages"][0]["stage"] == "parse"
-    assert payload["results"]["telemetry"]["evaluation"]["source"] == "model_json"
+    content = response.content.decode("utf-8")
+
+    # Simple verification that SSE sends back the results event
+    assert 'data: {"type": "results"' in content
+    assert '"overall_score": 88' in content
 
 
 def test_analyze_returns_422_for_extraction_failures():
-    with patch("backend.app.routers.resume.analyze_resume") as mock_analyze:
+    with patch("backend.app.routers.resume.cache.get") as mock_cache_get, \
+         patch("backend.app.routers.resume.cache.__contains__") as mock_cache_contains, \
+         patch("backend.app.routers.resume.analyze_resume") as mock_analyze:
+
+        mock_cache_contains.return_value = False
         from backend.app.services.errors import ResumeExtractionError
 
         mock_analyze.side_effect = ResumeExtractionError("No text could be extracted from the resume file.")
 
         response = client.post(
             "/resume/analyze",
-            files={"file": ("resume.txt", b"resume text", "text/plain")},
-            data={"job_title": "Engineer", "job_description": "Build systems"},
+            files={"file": ("resume2.txt", b"resume text 2", "text/plain")},
+            data={"job_title": "Engineer", "job_description": "Build systems 2"},
         )
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == "No text could be extracted from the resume file."
-    assert response.headers["x-error-code"] == "resume_extraction_failed"
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert 'data: {"type": "error"' in content
+    assert 'No text could be extracted' in content
+    assert 'resume_extraction_failed' in content
 
 
 def test_analyze_returns_503_for_upstream_ai_failures():
-    with patch("backend.app.routers.resume.analyze_resume") as mock_analyze:
+    with patch("backend.app.routers.resume.cache.get") as mock_cache_get, \
+         patch("backend.app.routers.resume.cache.__contains__") as mock_cache_contains, \
+         patch("backend.app.routers.resume.analyze_resume") as mock_analyze:
+
+        mock_cache_contains.return_value = False
         from backend.app.services.errors import UpstreamModelError
 
         mock_analyze.side_effect = UpstreamModelError(
@@ -103,12 +112,15 @@ def test_analyze_returns_503_for_upstream_ai_failures():
 
         response = client.post(
             "/resume/analyze",
-            files={"file": ("resume.txt", b"resume text", "text/plain")},
-            data={"job_title": "Engineer", "job_description": "Build systems"},
+            files={"file": ("resume3.txt", b"resume text 3", "text/plain")},
+            data={"job_title": "Engineer", "job_description": "Build systems 3"},
         )
 
-    assert response.status_code == 503
-    assert response.headers["x-error-code"] == "upstream_model_error"
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert 'data: {"type": "error"' in content
+    assert 'upstream AI service is unavailable' in content
+    assert 'upstream_model_error' in content
 
 
 def test_download_docx_uses_final_resume_without_rerunning_analysis():

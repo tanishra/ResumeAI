@@ -1,17 +1,30 @@
 import json
 import asyncio
 import logging
-from fastapi import APIRouter, UploadFile, Form, HTTPException, Response
+import filetype
+import hashlib
+from fastapi import APIRouter, UploadFile, Form, HTTPException, Response, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sse_starlette.sse import EventSourceResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from diskcache import Cache
+
 from backend.app.services.analyzer import analyze_resume
 from backend.app.services.errors import ResumeAnalyzerError
 from backend.app.services.pdf_renderer import render_resume_docx_bytes, render_resume_pdf_bytes
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/resume", tags=["Resume"])
+limiter = Limiter(key_func=get_remote_address)
+cache = Cache(".cache/resume_analysis")
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+ALLOWED_MIME_TYPES = {
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain"
+}
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 
 
@@ -26,6 +39,13 @@ def _validate_request(file: UploadFile, contents: bytes, job_title: str, job_des
     if len(contents) > MAX_FILE_SIZE_BYTES:
         logger.warning(f"Rejected upload exceeding size limit: {len(contents)} bytes")
         raise HTTPException(status_code=413, detail="File size exceeds the 10MB limit.")
+
+    # Validate file content signature
+    if extension != ".txt":
+        kind = filetype.guess(contents)
+        if kind is None or kind.mime not in ALLOWED_MIME_TYPES:
+            logger.warning("Rejected upload with invalid file signature")
+            raise HTTPException(status_code=400, detail="Invalid file signature. File may be corrupted or disguised.")
 
     if not job_title.strip():
         raise HTTPException(status_code=400, detail="Job title is required.")
@@ -49,7 +69,9 @@ def _parse_structured_resume_payload(payload: str | None) -> dict | None:
     return parsed
 
 @router.post("/analyze")
+@limiter.limit("5/minute")
 async def analyze(
+    request: Request,
     file: UploadFile,
     job_title: str = Form(...),
     job_description: str = Form(...)
@@ -58,6 +80,11 @@ async def analyze(
     contents = await file.read()
     _validate_request(file, contents, job_title, job_description)
     
+    # Generate cache key
+    file_hash = hashlib.sha256(contents).hexdigest()
+    job_hash = hashlib.sha256(f"{job_title}:{job_description}".encode("utf-8")).hexdigest()
+    cache_key = f"{file_hash}_{job_hash}"
+
     async def event_generator():
         queue = asyncio.Queue()
 
@@ -67,9 +94,15 @@ async def analyze(
 
         async def run_analysis():
             try:
-                results = await analyze_resume(file.filename, contents, job_title, job_description, on_progress=on_progress)
-                await queue.put({"type": "results", "data": results})
-                logger.info("Analysis successfully completed")
+                if cache_key in cache:
+                    logger.info("Returning cached analysis results")
+                    await on_progress("Found cached analysis. Returning results instantly.")
+                    await queue.put({"type": "results", "data": cache[cache_key]})
+                else:
+                    results = await analyze_resume(file.filename, contents, job_title, job_description, on_progress=on_progress)
+                    cache.set(cache_key, results, expire=86400) # Cache for 24 hours
+                    await queue.put({"type": "results", "data": results})
+                    logger.info("Analysis successfully completed")
             except ResumeAnalyzerError as exc:
                 logger.error(f"ResumeAnalyzerError: {exc.detail} (code: {exc.error_code})")
                 await queue.put({"type": "error", "detail": exc.detail, "code": exc.error_code})
@@ -81,11 +114,16 @@ async def analyze(
 
         task = asyncio.create_task(run_analysis())
 
+        def custom_encoder(obj):
+            if isinstance(obj, bytes):
+                return obj.decode("utf-8", errors="replace")
+            raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
         while True:
             item = await queue.get()
             if item is None:
                 break
-            yield {"data": json.dumps(item)}
+            yield {"data": json.dumps(item, default=custom_encoder)}
         
         await task
 

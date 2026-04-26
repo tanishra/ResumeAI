@@ -3,7 +3,10 @@ from unittest.mock import patch
 from crew_app.crew import run_pipeline, run_pipeline_with_diagnostics
 
 
-def test_run_pipeline_sanitizes_stage_outputs():
+import pytest
+
+@pytest.mark.asyncio
+async def test_run_pipeline_sanitizes_stage_outputs():
     stage_outputs = [
         "```text\nCLEANED RESUME\n- Built APIs\n```",
         "Here is the rewritten resume:\nREWRITTEN RESUME\n- Built APIs with Python",
@@ -23,7 +26,7 @@ def test_run_pipeline_sanitizes_stage_outputs():
          patch("crew_app.crew.refine_bullets_task", return_value=object()), \
          patch("crew_app.crew.evaluate_ats_task", return_value=object()), \
          patch("crew_app.crew._invoke_task", side_effect=stage_outputs):
-        cleaned, rewritten, final_resume, evaluation = run_pipeline(
+        cleaned, rewritten, final_resume, evaluation = await run_pipeline(
             raw_resume_text="Raw resume text",
             job_title="Engineer",
             job_description="Build backend systems",
@@ -35,7 +38,8 @@ def test_run_pipeline_sanitizes_stage_outputs():
     assert evaluation == '{\n  "overall_score": 82,\n  "breakdown": {"keyword_match": 4}\n}'
 
 
-def test_run_pipeline_falls_back_when_stage_fails():
+@pytest.mark.asyncio
+async def test_run_pipeline_falls_back_when_stage_fails():
     stage_outputs = [
         RuntimeError("parse failed"),
         RuntimeError("rewrite failed"),
@@ -52,7 +56,7 @@ def test_run_pipeline_falls_back_when_stage_fails():
          patch("crew_app.crew.refine_bullets_task", return_value=object()), \
          patch("crew_app.crew.evaluate_ats_task", return_value=object()), \
          patch("crew_app.crew._invoke_task", side_effect=stage_outputs):
-        cleaned, rewritten, final_resume, evaluation = run_pipeline(
+        cleaned, rewritten, final_resume, evaluation = await run_pipeline(
             raw_resume_text="Raw resume text",
             job_title="Engineer",
             job_description="Build backend systems",
@@ -64,7 +68,8 @@ def test_run_pipeline_falls_back_when_stage_fails():
     assert evaluation == ""
 
 
-def test_run_pipeline_with_diagnostics_reports_stage_failures():
+@pytest.mark.asyncio
+async def test_run_pipeline_with_diagnostics_reports_stage_failures():
     stage_outputs = [
         "Cleaned resume text",
         RuntimeError("rewrite failed"),
@@ -81,7 +86,7 @@ def test_run_pipeline_with_diagnostics_reports_stage_failures():
          patch("crew_app.crew.refine_bullets_task", return_value=object()), \
          patch("crew_app.crew.evaluate_ats_task", return_value=object()), \
          patch("crew_app.crew._invoke_task", side_effect=stage_outputs):
-        result = run_pipeline_with_diagnostics(
+        result = await run_pipeline_with_diagnostics(
             raw_resume_text="Raw resume text",
             job_title="Engineer",
             job_description="Build backend systems",
