@@ -3,7 +3,10 @@ from unittest.mock import patch
 from backend.app.services.analyzer import analyze_resume
 
 
-def test_analyze_resume_repairs_rewrite_before_fallback():
+import pytest
+
+@pytest.mark.asyncio
+async def test_analyze_resume_repairs_rewrite_before_fallback():
     with patch("backend.app.services.analyzer.detect_and_extract", return_value=("txt", "JANE DOE\nEXPERIENCE\n- Built Python APIs.")), \
          patch("crew_app.crew.run_pipeline_with_diagnostics", return_value={
              "cleaned": "JANE DOE\nEXPERIENCE\n- Built Python APIs.",
@@ -14,7 +17,7 @@ def test_analyze_resume_repairs_rewrite_before_fallback():
          }), \
          patch("crew_app.crew.repair_rewrite", return_value="JANE DOE\nEXPERIENCE\n- Built Python APIs."), \
          patch("crew_app.crew.repair_final_resume", return_value="JANE DOE\nEXPERIENCE\n- Built Python APIs."):
-        result = analyze_resume(
+        result = await analyze_resume(
             "resume.txt",
             b"resume text",
             "Backend Engineer",
@@ -31,7 +34,8 @@ def test_analyze_resume_repairs_rewrite_before_fallback():
     assert result["structured_resume"]["name"] == "JANE DOE"
 
 
-def test_analyze_resume_falls_back_after_failed_repair():
+@pytest.mark.asyncio
+async def test_analyze_resume_falls_back_after_failed_repair():
     cleaned = "JANE DOE\nEXPERIENCE\n- Built Python APIs."
 
     with patch("backend.app.services.analyzer.detect_and_extract", return_value=("txt", cleaned)), \
@@ -44,7 +48,7 @@ def test_analyze_resume_falls_back_after_failed_repair():
          }), \
          patch("crew_app.crew.repair_rewrite", return_value="JANE DOE\nEXPERIENCE\n- Built Python APIs with AWS."), \
          patch("crew_app.crew.repair_final_resume", return_value="JANE DOE\nEXPERIENCE\n- Built Python APIs with Kubernetes."):
-        result = analyze_resume(
+        result = await analyze_resume(
             "resume.txt",
             b"resume text",
             "Backend Engineer",

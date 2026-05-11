@@ -14,16 +14,20 @@ test('frontend analyze flow succeeds through the app-facing route', async () => 
     assert.equal(init?.method, 'POST');
     assert.ok(init?.body instanceof FormData);
 
-    return Response.json({
-      success: true,
-      results: {
-        cleaned: 'cleaned resume',
-        rewritten: 'rewritten resume',
-        final_resume: 'final resume',
-        evaluation: {
-          overall_score: 88,
-        },
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          encoder.encode(
+            'data: {"type": "results", "data": {"final_resume": "final resume", "evaluation": {"overall_score": 88}}}\n\n'
+          )
+        );
+        controller.close();
       },
+    });
+
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/event-stream' },
     });
   };
 
@@ -58,7 +62,7 @@ test('frontend analyze route returns a stable failure when backend is unavailabl
     const payload = await response.json();
 
     assert.equal(response.status, 500);
-    assert.deepEqual(payload, { detail: 'Failed to analyze resume.' });
+    assert.deepEqual(payload, { detail: 'Failed to connect to backend.' });
   } finally {
     globalThis.fetch = originalFetch;
   }
